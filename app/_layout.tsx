@@ -1,12 +1,24 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Tabs } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
+import { useTheme } from '@/hooks/useTheme';
+import { useAppearanceStore } from '@/store/useAppearanceStore';
+import { useEffectiveColorScheme } from '@/hooks/useEffectiveColorScheme';
+import { ToastProvider } from '@/hooks/useToast';
+import { ToastManagerWrapper } from '@/components/ui/ToastProvider';
+
+function TabBarIcon(props: {
+  name: React.ComponentProps<typeof FontAwesome>['name'];
+  color: string;
+}) {
+  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
+}
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -14,8 +26,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'home/index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -46,14 +57,105 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const theme = useTheme();
+  const mode = useAppearanceStore((state) => state.mode);
+  const effectiveScheme = useEffectiveColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <ToastProvider>
+      <ThemeProvider value={effectiveScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Tabs
+        initialRouteName="home/index"
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: Colors[effectiveScheme].tint,
+          tabBarInactiveTintColor: Colors[effectiveScheme].tabIconDefault,
+          tabBarStyle: {
+            backgroundColor: theme.colors.surface,
+            borderTopColor: theme.colors.border,
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '600',
+          },
+        }}>
+        <Tabs.Screen
+          name="home/index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="projects"
+          options={{
+            title: 'Projects',
+            tabBarIcon: ({ color }) => <TabBarIcon name="tasks" color={color} />,
+            href: '/projects',
+          }}
+        />
+        <Tabs.Screen
+          name="patterns"
+          options={{
+            title: 'Patterns',
+            tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
+            href: '/patterns',
+          }}
+        />
+        <Tabs.Screen
+          name="community/index"
+          options={{
+            title: 'Community',
+            tabBarIcon: ({ color }) => <TabBarIcon name="users" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings/index"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color}) => <TabBarIcon name="cog" color={color} />,
+          }}
+        />
+        
+        <Tabs.Screen
+          name="profile/index"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="create-pattern/index"
+          options={{
+            href: null, // Hide from tabs - accessible via Patterns screen
+          }}
+        />
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="+not-found"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="modal"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="+html"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
+        <ToastManagerWrapper />
+      </ThemeProvider>
+    </ToastProvider>
   );
 }
