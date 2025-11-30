@@ -18,32 +18,25 @@
 
 #### Project Detail Screen
 - ✅ **Tabbed Interface:** Split into Track, Pattern, Studio, and Assistant tabs.
+- ✅ **Persistent Counter Deck:** Floating, swipeable card deck to access *all* project counters from any tab (e.g., while reading pattern).
 - ✅ **Studio View:** Moodboard-style view for inspiration and colors.
 - ✅ **Assistant View:** Placeholder for AI chat interface.
-- ✅ **Pattern View:** Dedicated view for pattern instructions.
 - ✅ **Track View:** Centralized counters, journal, and yarn management.
 
 #### Patterns & Community
 - ✅ **Featured Carousel:** Horizontal scroll of hero patterns.
 - ✅ **Floating Filters:** Clean chip-based filtering.
-- ✅ **Quick Actions:** Floating pills for Create, Import, and Stash.
 - ✅ **Social Feed:** Card-style posts with user avatars, images, and likes.
 - ✅ **Publish Flow:** Seamless "Review & Share" flow from project completion.
 
 #### Navigation
 - ✅ **Floating Tab Bar:** Custom tab bar with glass effect, floating above content.
-- ✅ **Haptic Feedback:** Integrated into tab switches and key actions.
+- ✅ **Haptic Feedback:** Integrated into tab switches, counters, and key actions.
 
 ### 2. Interaction Polish
 - ✅ **Counter Animations:** Visual pulse/scale effect when incrementing counters.
-- ✅ **Photo Gallery:**
-    - Pinch-to-zoom support.
-    - Horizontal swipe navigation.
-    - Immersive black background.
-- ✅ **Search & Filter:**
-    - Real-time text search for Projects and Patterns.
-    - Cross-field search (names, notes, patterns).
-    - Clear search buttons and combined status filtering.
+- ✅ **Photo Gallery:** Pinch-to-zoom support, swipe navigation, immersive black background.
+- ✅ **Search & Filter:** Real-time cross-field search, clear buttons, combined status filtering.
 
 ---
 

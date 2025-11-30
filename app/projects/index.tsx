@@ -89,16 +89,37 @@ export default function ProjectsHomeScreen() {
             Keep yarn details, palette, and pattern snippets in one cozy dashboard.
           </Text>
         </View>
+      </View>
+
+      {/* Search Bar */}
+      <View style={[styles.searchContainer]}>
+        <View style={[styles.searchBar, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+          <FontAwesome name="search" size={16} color={theme.colors.muted} style={styles.searchIcon} />
+          <TextInput 
+            placeholder="Search projects..." 
+            placeholderTextColor={theme.colors.muted}
+            style={[styles.searchInput, { color: theme.colors.text }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <FontAwesome name="times-circle" size={16} color={theme.colors.muted} />
+            </TouchableOpacity>
+          )}
+        </View>
+        
         <TouchableOpacity
           onPress={() => router.push('/projects/create')}
           style={[
-            styles.createButton,
+            styles.addButton,
             {
               backgroundColor: theme.colors.accent,
               shadowColor: theme.colors.accent,
             },
           ]}>
-          <FontAwesome name="plus" size={20} color="#000" />
+          <FontAwesome name="plus" size={16} color="#000" />
+          <Text style={styles.addButtonText}>New</Text>
         </TouchableOpacity>
       </View>
 
@@ -125,24 +146,6 @@ export default function ProjectsHomeScreen() {
           </View>
         ) : null}
       </Card>
-
-      <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
-          <FontAwesome name="search" size={16} color={theme.colors.muted} style={styles.searchIcon} />
-          <TextInput 
-            placeholder="Search projects..." 
-            placeholderTextColor={theme.colors.muted}
-            style={[styles.searchInput, { color: theme.colors.text }]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <FontAwesome name="times-circle" size={16} color={theme.colors.muted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
 
       <Card title="Filters" style={styles.sectionCard}>
         <View style={styles.filterRow}>
@@ -235,16 +238,48 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  createButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  searchContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 0,
+    gap: 12,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    height: 48,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0, 
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  addButtonText: {
+    color: '#000',
+    fontWeight: '700',
+    fontSize: 14,
+    marginLeft: 6,
   },
   sectionCard: {
     marginTop: 12,
@@ -275,26 +310,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  searchContainer: {
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    padding: 0, // Remove default padding
   },
   filterRow: {
     flexDirection: 'row',
