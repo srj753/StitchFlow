@@ -13,8 +13,11 @@ import {
 
 import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StockAlerts } from '@/components/yarn/StockAlerts';
+import { YarnInsights } from '@/components/yarn/YarnInsights';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTheme } from '@/hooks/useTheme';
+import { calculateYarnStats, getStockAlerts } from '@/lib/yarnAnalytics';
 import { estimateYarnRequirement } from '@/lib/yarnEstimator';
 import { useYarnStore } from '@/store/useYarnStore';
 import { Yarn, YarnWeightCategory } from '@/types/yarn';
@@ -53,6 +56,10 @@ export default function YarnStashScreen() {
     () => yarns.reduce((sum, yarn) => sum + (yarn.skeinsOwned - yarn.skeinsReserved), 0),
     [yarns],
   );
+
+  const yarnStats = useMemo(() => calculateYarnStats(yarns), [yarns]);
+  const stockAlerts = useMemo(() => getStockAlerts(yarns), [yarns]);
+
   const estimatorResult = useMemo(() => {
     const width = Number(estimatorWidth);
     const height = Number(estimatorHeight);
@@ -89,6 +96,16 @@ export default function YarnStashScreen() {
           highlight
         />
       </View>
+
+      {yarns.length > 0 && (
+        <>
+          <YarnInsights stats={yarnStats} />
+          <StockAlerts 
+            alerts={stockAlerts} 
+            onPressYarn={(id) => router.push(`/patterns/stash/${id}` as any)} 
+          />
+        </>
+      )}
 
       <View
         style={[
