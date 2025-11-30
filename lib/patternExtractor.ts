@@ -404,3 +404,4 @@ function generateDescription(data: ExtractedPatternData, originalText: string): 
   return undefined;
 }
 
+

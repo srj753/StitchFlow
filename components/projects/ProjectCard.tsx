@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import * as Haptics from 'expo-haptics';
 import { formatDistanceToNow } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useMemo } from 'react';
 import {
     Image,

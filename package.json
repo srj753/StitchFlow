@@ -13,6 +13,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-voice/voice": "^3.2.4",
     "@react-navigation/native": "^7.1.8",
     "date-fns": "^4.1.0",
     "expo": "~54.0.25",
@@ -28,6 +29,7 @@
     "expo-linking": "~8.0.9",
     "expo-router": "~6.0.15",
     "expo-sharing": "~14.0.7",
+    "expo-speech": "~14.0.7",
     "expo-splash-screen": "~31.0.11",
     "expo-status-bar": "~3.0.8",
     "expo-web-browser": "~15.0.9",

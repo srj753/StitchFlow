@@ -123,3 +123,4 @@ function decodeEntities(text: string): string {
     .replace(/&copy;/g, '(c)');
 }
 
+

@@ -116,3 +116,4 @@ export function createPatternChangeSummary(pattern: Pattern): string {
   return summary;
 }
 
+

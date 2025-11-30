@@ -1,3 +1,4 @@
+import * as Speech from 'expo-speech';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +26,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useKeepScreenAwake } from '@/hooks/useKeepScreenAwake';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
-import { useVoiceCommandStub } from '@/hooks/useVoiceCommandStub';
+import { VoiceControlButton } from '@/components/counters/VoiceControlButton';
+import { findCounterByName, ParsedCommand } from '@/lib/voiceCommands';
 import { useCounterPresetsStore } from '@/store/useCounterPresetsStore';
 import { useProjectsStore } from '@/store/useProjectsStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -108,7 +110,71 @@ export function TrackView({ project }: TrackViewProps) {
   const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [patternNotesDraft, setPatternNotesDraft] = useState('');
   const [progressNotesDraft, setProgressNotesDraft] = useState('');
-  const voiceStub = useVoiceCommandStub();
+  
+  // Voice command handler
+  const handleVoiceCommand = (command: ParsedCommand) => {
+    const { action } = command;
+    
+    // Find the target counter
+    const targetCounter = action.counterName
+      ? findCounterByName(
+          project.counters.map((c) => ({ id: c.id, label: c.label })),
+          action.counterName,
+        )
+      : project.counters[0]; // Default to first counter
+    
+    if (!targetCounter) {
+      showError(`Counter "${action.counterName}" not found`);
+      return;
+    }
+    
+    const counter = project.counters.find((c) => c.id === targetCounter.id);
+    if (!counter) return;
+    
+    switch (action.type) {
+      case 'increment': {
+        const newValue = counter.currentValue + (action.amount || 1);
+        updateCounter(project.id, counter.id, newValue);
+        const message = `Added ${action.amount || 1} to ${counter.label}. Now at ${newValue}`;
+        Speech.speak(message, { language: 'en', rate: 0.9 });
+        showSuccess(message);
+        break;
+      }
+        
+      case 'decrement': {
+        const newValue = Math.max(0, counter.currentValue - (action.amount || 1));
+        updateCounter(project.id, counter.id, newValue);
+        const message = `Subtracted ${action.amount || 1} from ${counter.label}. Now at ${newValue}`;
+        Speech.speak(message, { language: 'en', rate: 0.9 });
+        showSuccess(message);
+        break;
+      }
+        
+      case 'set':
+        updateCounter(project.id, counter.id, action.value);
+        const setMessage = `Set ${counter.label} to ${action.value}`;
+        Speech.speak(setMessage, { language: 'en', rate: 0.9 });
+        showSuccess(setMessage);
+        break;
+        
+      case 'reset':
+        updateCounter(project.id, counter.id, 0);
+        const resetMessage = `Reset ${counter.label} to zero`;
+        Speech.speak(resetMessage, { language: 'en', rate: 0.9 });
+        showSuccess(resetMessage);
+        break;
+        
+      case 'read':
+        // Speak the value
+        const readText = `${counter.label} is at ${counter.currentValue}`;
+        Speech.speak(readText, { language: 'en', rate: 0.9 });
+        showSuccess(readText);
+        break;
+        
+      default:
+        showError('Command not recognized');
+    }
+  };
 
   useEffect(() => {
     setPatternNotesDraft(project.notes ?? '');
@@ -468,6 +534,18 @@ export function TrackView({ project }: TrackViewProps) {
                 Preset
               </Text>
             </TouchableOpacity>
+          </View>
+          
+          {/* Voice Control */}
+          <View style={[styles.voiceControlContainer, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.voiceControlLabel, { color: theme.colors.textSecondary }]}>
+              Voice Control
+            </Text>
+            <VoiceControlButton
+              onCommand={handleVoiceCommand}
+              enabled={true}
+              size="medium"
+            />
           </View>
           
           <CounterPresetPicker
@@ -1131,11 +1209,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  voiceStub: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
+  voiceControlContainer: {
+    borderRadius: 20,
+    padding: 16,
+    marginTop: 16,
     marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(150,150,150,0.1)',
+  },
+  voiceControlLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
   },
   journalInputContainer: {
       borderRadius: 24,
