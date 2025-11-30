@@ -4,14 +4,13 @@ import { useFonts } from 'expo-font';
 import { Tabs } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
 import { ToastManagerWrapper } from '@/components/ui/ToastProvider';
-import Colors from '@/constants/Colors';
 import { useEffectiveColorScheme } from '@/hooks/useEffectiveColorScheme';
 import { useTheme } from '@/hooks/useTheme';
 import { ToastProvider } from '@/hooks/useToast';
-import { useAppearanceStore } from '@/store/useAppearanceStore';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -58,8 +57,8 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const theme = useTheme();
-  const mode = useAppearanceStore((state) => state.mode);
   const effectiveScheme = useEffectiveColorScheme();
+  const isWeb = Platform.OS === 'web';
 
   return (
     <ToastProvider>
@@ -69,9 +68,9 @@ function RootLayoutNav() {
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: true,
-          tabBarActiveTintColor: Colors[effectiveScheme].tint,
-          tabBarInactiveTintColor: Colors[effectiveScheme].tabIconDefault,
-          tabBarStyle: {
+          tabBarActiveTintColor: theme.colors.accent, // Use dynamic accent color
+          tabBarInactiveTintColor: theme.colors.muted,
+          tabBarStyle: isWeb ? undefined : {
             position: 'absolute',
             bottom: 24,
             left: 24,
@@ -143,7 +142,7 @@ function RootLayoutNav() {
         <Tabs.Screen
           name="create-pattern/index"
           options={{
-            href: null, // Hide from tabs - accessible via Patterns screen
+            href: null,
           }}
         />
         <Tabs.Screen
