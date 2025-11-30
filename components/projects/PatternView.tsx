@@ -1,91 +1,168 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import * as Haptics from 'expo-haptics';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 import { useTheme } from '@/hooks/useTheme';
-import { useProjectsStore } from '@/store/useProjectsStore';
+import { parsePatternText } from '@/lib/patternParser';
 import { Project } from '@/types/project';
 
 type PatternViewProps = {
   project: Project;
 };
 
+type ViewMode = 'smart' | 'original';
+
 export function PatternView({ project }: PatternViewProps) {
   const theme = useTheme();
-  const updateCounter = useProjectsStore((state) => state.updateCounter);
+  const [viewMode, setViewMode] = useState<ViewMode>('smart');
+  const [completedLines, setCompletedLines] = useState<Set<string>>(new Set());
 
-  // Find primary row counter for HUD
-  const rowCounter = project.counters.find(
-    (c) => c.type === 'row' || c.label.toLowerCase().includes('row')
-  );
+  // Parse the pattern snippet into interactive lines
+  const parsedLines = useMemo(() => {
+    return parsePatternText(project.patternSnippet || '');
+  }, [project.patternSnippet]);
 
-  const handleIncrement = () => {
-    if (rowCounter) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      updateCounter(project.id, rowCounter.id, rowCounter.currentValue + 1);
+  const toggleLine = (id: string) => {
+    const next = new Set(completedLines);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
     }
+    setCompletedLines(next);
+  };
+
+  const renderSmartView = () => {
+    if (parsedLines.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <FontAwesome name="file-text-o" size={48} color={theme.colors.border} />
+          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+            No pattern text found. Paste your pattern in the 'Track' tab to see the checklist here.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.checklistContainer}>
+        {parsedLines.map((line) => {
+          const isDone = completedLines.has(line.id);
+          const isHeader = line.type === 'header';
+
+          if (isHeader) {
+            return (
+              <Text key={line.id} style={[styles.sectionHeader, { color: theme.colors.accent }]}>
+                {line.text}
+              </Text>
+            );
+          }
+
+          return (
+            <TouchableOpacity
+              key={line.id}
+              onPress={() => toggleLine(line.id)}
+              style={[
+                styles.checkRow,
+                {
+                  backgroundColor: isDone ? theme.colors.surfaceAlt : theme.colors.surface,
+                  borderColor: isDone ? 'transparent' : theme.colors.border,
+                },
+              ]}>
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: isDone ? theme.colors.accent : theme.colors.muted,
+                    backgroundColor: isDone ? theme.colors.accent : 'transparent',
+                  },
+                ]}>
+                {isDone && <FontAwesome name="check" size={10} color="#000" />}
+              </View>
+              <Text
+                style={[
+                  styles.lineText,
+                  {
+                    color: isDone ? theme.colors.textSecondary : theme.colors.text,
+                    textDecorationLine: isDone ? 'line-through' : 'none',
+                  },
+                ]}>
+                {line.text}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderOriginalView = () => {
+    if (project.sourceUrl && Platform.OS !== 'web') {
+      return (
+        <View style={styles.webviewContainer}>
+          <WebView source={{ uri: project.sourceUrl }} style={{ flex: 1 }} />
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={[styles.rawTextContainer, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.rawText, { color: theme.colors.text }]}>
+          {project.patternSnippet || 'No pattern text available.'}
+        </Text>
+        {project.sourceUrl && Platform.OS === 'web' && (
+            <Text style={{color: theme.colors.accent, marginTop: 20}}>
+                Original URL: {project.sourceUrl} (Open in new tab)
+            </Text>
+        )}
+      </ScrollView>
+    );
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.header}>
-            <View style={[styles.iconBox, { backgroundColor: theme.colors.accentMuted }]}>
-              <FontAwesome name="file-text-o" size={20} color={theme.colors.accent} />
-            </View>
-            <View>
-              <Text style={[styles.title, { color: theme.colors.text }]}>Pattern Instructions</Text>
-              <Text style={{ color: theme.colors.textSecondary }}>
-                {project.patternName || 'Custom Project'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.snippetBox, { backgroundColor: theme.colors.surfaceAlt }]}>
-            {project.patternSnippet ? (
-              <Text style={[styles.snippetText, { color: theme.colors.text }]}>
-                {project.patternSnippet}
-              </Text>
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
-                  No pattern text added yet.{'\n'}Go to 'Track' tab to add snippets.
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {project.sourceUrl && (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(project.sourceUrl!)}
-              style={[
-                styles.linkButton,
-                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-              ]}>
-              <FontAwesome name="external-link" size={16} color={theme.colors.textSecondary} />
-              <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>
-                Open Original PDF/Web
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Floating HUD */}
-      {rowCounter && (
-        <View style={[styles.hud, { backgroundColor: '#1c1917' }]}>
-          <View>
-            <Text style={styles.hudLabel}>{rowCounter.label}</Text>
-            <Text style={styles.hudValue}>{rowCounter.currentValue}</Text>
-          </View>
+      {/* Mode Toggle */}
+      <View style={styles.toggleContainer}>
+        <View style={[styles.toggleBar, { backgroundColor: theme.colors.surfaceAlt }]}>
           <TouchableOpacity
-            onPress={handleIncrement}
-            activeOpacity={0.8}
-            style={[styles.hudButton, { backgroundColor: theme.colors.accent }]}>
-            <FontAwesome name="plus" size={20} color="#000" />
+            onPress={() => setViewMode('smart')}
+            style={[
+              styles.toggleButton,
+              viewMode === 'smart' && { backgroundColor: theme.colors.card },
+            ]}>
+            <Text
+              style={[
+                styles.toggleText,
+                { color: viewMode === 'smart' ? theme.colors.text : theme.colors.textSecondary },
+              ]}>
+              Smart View
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setViewMode('original')}
+            style={[
+              styles.toggleButton,
+              viewMode === 'original' && { backgroundColor: theme.colors.card },
+            ]}>
+            <Text
+              style={[
+                styles.toggleText,
+                { color: viewMode === 'original' ? theme.colors.text : theme.colors.textSecondary },
+              ]}>
+              Original
+            </Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Content */}
+      {viewMode === 'smart' ? (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {renderSmartView()}
+        </ScrollView>
+      ) : (
+        <View style={styles.fullScreenContent}>{renderOriginalView()}</View>
       )}
     </View>
   );
@@ -96,91 +173,91 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: 100,
+    paddingBottom: 120,
+    paddingHorizontal: 4,
   },
-  card: {
-    borderRadius: 24,
-    padding: 20,
+  fullScreenContent: {
+    flex: 1,
+    paddingBottom: 100, // Space for floating counter
+  },
+  toggleContainer: {
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
-  header: {
+  toggleBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
     borderRadius: 12,
+    padding: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 40,
+    marginTop: 40,
+    gap: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  snippetBox: {
-    borderRadius: 16,
-    padding: 20,
-    minHeight: 200,
-    marginBottom: 20,
-  },
-  snippetText: {
+  emptyText: {
+    textAlign: 'center',
     fontSize: 16,
     lineHeight: 24,
   },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.6,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  checklistContainer: {
     gap: 8,
-    paddingVertical: 14,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
     borderRadius: 16,
     borderWidth: 1,
+    gap: 12,
   },
-  hud: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    borderRadius: 24,
-    padding: 12,
-    paddingLeft: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  hudLabel: {
-    color: '#a8a29e',
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  hudValue: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'SpaceMono',
-  },
-  hudButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
+  },
+  lineText: {
+    fontSize: 16,
+    lineHeight: 24,
+    flex: 1,
+  },
+  webviewContainer: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginHorizontal: 16,
+  },
+  rawTextContainer: {
+    flex: 1,
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 16,
+  },
+  rawText: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 });
-
