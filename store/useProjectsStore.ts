@@ -25,6 +25,8 @@ type ProjectsState = {
   updateCounter: (projectId: string, counterId: string, value: number) => void;
   updateCounterLabel: (projectId: string, counterId: string, label: string) => void;
   deleteCounter: (projectId: string, counterId: string) => void;
+  linkCounters: (projectId: string, counterIds: string[]) => void;
+  unlinkCounter: (projectId: string, counterId: string) => void;
   
   // Notes & snippets
   updateNotes: (id: string, notes: string) => void;
@@ -412,11 +414,68 @@ export const useProjectsStore = create<ProjectsState>()(
             project.id === projectId
               ? {
                   ...project,
-                  counters: project.counters.filter((c) => c.id !== counterId),
+                  counters: project.counters
+                    .filter((c) => c.id !== counterId)
+                    .map((c) => ({
+                      ...c,
+                      linkedCounterIds: c.linkedCounterIds?.filter((id) => id !== counterId) || [],
+                    })),
                   updatedAt: now(),
                 }
               : project,
           ),
+        }));
+      },
+      linkCounters: (projectId, counterIds) => {
+        if (counterIds.length < 2) return;
+        
+        set((state) => ({
+          projects: state.projects.map((project) => {
+            if (project.id !== projectId) return project;
+            
+            return {
+              ...project,
+              counters: project.counters.map((counter) => {
+                if (!counterIds.includes(counter.id)) return counter;
+                
+                // Merge existing linked IDs with new ones, removing duplicates
+                const existingLinks = counter.linkedCounterIds || [];
+                const allLinks = Array.from(new Set([...existingLinks, ...counterIds.filter((id) => id !== counter.id)]));
+                
+                return {
+                  ...counter,
+                  linkedCounterIds: allLinks,
+                };
+              }),
+              updatedAt: now(),
+            };
+          }),
+        }));
+      },
+      unlinkCounter: (projectId, counterId) => {
+        set((state) => ({
+          projects: state.projects.map((project) => {
+            if (project.id !== projectId) return project;
+            
+            return {
+              ...project,
+              counters: project.counters.map((counter) => {
+                // If this is the counter being unlinked, clear its linkedCounterIds
+                if (counter.id === counterId) {
+                  return {
+                    ...counter,
+                    linkedCounterIds: [],
+                  };
+                }
+                // Otherwise, remove the unlinked counter from this counter's linkedCounterIds
+                return {
+                  ...counter,
+                  linkedCounterIds: counter.linkedCounterIds?.filter((id) => id !== counterId) || [],
+                };
+              }),
+              updatedAt: now(),
+            };
+          }),
         }));
       },
       

@@ -3,9 +3,11 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { AdvancedFilters, AdvancedFilterOptions } from '@/components/filters/AdvancedFilters';
 import { Screen } from '@/components/Screen';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useTheme } from '@/hooks/useTheme';
 import { useProjectsStore } from '@/store/useProjectsStore';
 import { Project } from '@/types/project';
@@ -30,27 +32,46 @@ export default function ProjectsHomeScreen() {
   );
   const [filter, setFilter] = useState<FilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterOptions>({});
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const filtered = useMemo(() => {
     let result = projects;
 
-    // Status Filter
+    // Status Filter (simple)
     if (filter !== 'all') {
       result = result.filter((project) => (project.status ?? 'active') === filter);
     }
 
-    // Text Search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // Advanced Status Filters (multi-select)
+    if (advancedFilters.status && advancedFilters.status.length > 0) {
+      result = result.filter((project) => advancedFilters.status!.includes(project.status ?? 'active'));
+    }
+
+    // Text Search (debounced)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       result = result.filter((project) => 
         project.name.toLowerCase().includes(query) || 
         project.patternName?.toLowerCase().includes(query) ||
-        project.notes?.toLowerCase().includes(query)
+        project.notes?.toLowerCase().includes(query) ||
+        project.progressNotes?.toLowerCase().includes(query)
       );
     }
 
+    // Has Photos filter
+    if (advancedFilters.hasPhotos) {
+      result = result.filter((project) => project.photos.length > 0);
+    }
+
+    // Has Journal filter
+    if (advancedFilters.hasJournal) {
+      result = result.filter((project) => project.journal.length > 0);
+    }
+
     return result;
-  }, [projects, filter, searchQuery]);
+  }, [projects, filter, debouncedSearchQuery, advancedFilters]);
 
   const stats = useMemo(() => {
     const activeCount = projects.filter((p) => (p.status ?? 'active') === 'active').length;
@@ -152,6 +173,7 @@ export default function ProjectsHomeScreen() {
           horizontal 
           showsHorizontalScrollIndicator={false} 
           contentContainerStyle={styles.filterRow}
+          style={{ flex: 1 }}
         >
           {filters.map((item) => {
             const selected = filter === item.value;
@@ -178,7 +200,42 @@ export default function ProjectsHomeScreen() {
             );
           })}
         </ScrollView>
+        <TouchableOpacity
+          onPress={() => setShowAdvancedFilters(true)}
+          style={[
+            styles.advancedChip,
+            styles.advancedChipFixed,
+            {
+              backgroundColor: Object.keys(advancedFilters).length > 0 ? theme.colors.accentMuted : theme.colors.surface,
+              borderColor: Object.keys(advancedFilters).length > 0 ? theme.colors.accent : theme.colors.border,
+            },
+          ]}>
+          <FontAwesome 
+            name="sliders" 
+            size={14} 
+            color={Object.keys(advancedFilters).length > 0 ? theme.colors.accent : theme.colors.textSecondary}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={{
+              color: Object.keys(advancedFilters).length > 0 ? theme.colors.accent : theme.colors.textSecondary,
+              fontWeight: Object.keys(advancedFilters).length > 0 ? '700' : '500',
+            }}>
+            More
+          </Text>
+        </TouchableOpacity>
       </View>
+      
+      <AdvancedFilters
+        visible={showAdvancedFilters}
+        onClose={() => setShowAdvancedFilters(false)}
+        filters={advancedFilters}
+        onApply={setAdvancedFilters}
+        onReset={() => {
+          setAdvancedFilters({});
+          setFilter('all');
+        }}
+      />
     </View>
   );
 
@@ -196,10 +253,26 @@ export default function ProjectsHomeScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="🧶"
-            title={searchQuery ? "No matches found" : "No projects yet"}
-            description={searchQuery ? "Try a different search term or filter." : "Start tracking your crochet projects with counters, notes, and progress photos."}
-            actionLabel={searchQuery ? "Clear Search" : "Create your first project"}
-            onAction={searchQuery ? () => setSearchQuery('') : () => router.push('/projects/create')}
+            title={debouncedSearchQuery || Object.keys(advancedFilters).length > 0 ? "No matches found" : "No projects yet"}
+            description={
+              debouncedSearchQuery || Object.keys(advancedFilters).length > 0
+                ? "Try adjusting your search or filters."
+                : "Start tracking your crochet projects with counters, notes, and progress photos."
+            }
+            actionLabel={
+              debouncedSearchQuery || Object.keys(advancedFilters).length > 0
+                ? "Clear Filters"
+                : "Create your first project"
+            }
+            onAction={
+              debouncedSearchQuery || Object.keys(advancedFilters).length > 0
+                ? () => {
+                    setSearchQuery('');
+                    setAdvancedFilters({});
+                    setFilter('all');
+                  }
+                : () => router.push('/projects/create')
+            }
           />
         }
         showsVerticalScrollIndicator={false}
@@ -323,6 +396,9 @@ const styles = StyleSheet.create({
   },
   filtersContainer: {
     marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   filterRow: {
     paddingRight: 16,
@@ -335,6 +411,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     elevation: 1,
+  },
+  advancedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  advancedChipFixed: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    elevation: 1,
+    flexShrink: 0,
   },
   separator: {
     height: 16,

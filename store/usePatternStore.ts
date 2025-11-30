@@ -8,6 +8,8 @@ type PatternState = {
   patterns: Pattern[];
   addPattern: (input: PatternInput) => Pattern;
   deletePattern: (id: string) => void;
+  toggleRowChecklist: (patternId: string, rowId: string) => void;
+  clearRowChecklist: (patternId: string) => void;
 };
 
 const now = () => new Date().toISOString();
@@ -53,6 +55,41 @@ export const usePatternStore = create<PatternState>()(
       deletePattern: (id) => {
         set((state) => ({
           patterns: state.patterns.filter((pattern) => pattern.id !== id),
+        }));
+      },
+      toggleRowChecklist: (patternId, rowId) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            
+            const checklist = pattern.rowChecklist || [];
+            const index = checklist.indexOf(rowId);
+            
+            if (index > -1) {
+              // Remove if exists
+              return {
+                ...pattern,
+                rowChecklist: checklist.filter((id) => id !== rowId),
+              };
+            } else {
+              // Add if doesn't exist
+              return {
+                ...pattern,
+                rowChecklist: [...checklist, rowId],
+              };
+            }
+          }),
+        }));
+      },
+      clearRowChecklist: (patternId) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            return {
+              ...pattern,
+              rowChecklist: [],
+            };
+          }),
         }));
       },
     }),

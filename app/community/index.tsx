@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { SlideUp } from '@/components/animations/SlideUp';
@@ -40,9 +41,12 @@ const communityPosts = [
   },
 ];
 
+type TabType = 'share' | 'store';
+
 export default function CommunityScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabType>('share');
 
   return (
     <Screen>
@@ -51,16 +55,69 @@ export default function CommunityScreen() {
           <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>COMMUNITY</Text>
           <Text style={[styles.title, { color: theme.colors.text }]}>Discover & Share</Text>
         </View>
+        {activeTab === 'share' && (
+          <TouchableOpacity
+            onPress={() => router.push('/community/publish')}
+            style={[styles.publishButton, { backgroundColor: theme.colors.accent }]}
+          >
+            <FontAwesome name="plus" size={12} color="#000" style={{ marginRight: 6 }} />
+            <Text style={styles.publishButtonText}>Share</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
         <TouchableOpacity
-          onPress={() => router.push('/community/publish')}
-          style={[styles.publishButton, { backgroundColor: theme.colors.accent }]}
-        >
-          <FontAwesome name="plus" size={12} color="#000" style={{ marginRight: 6 }} />
-          <Text style={styles.publishButtonText}>Share</Text>
+          onPress={() => setActiveTab('share')}
+          style={[
+            styles.tab,
+            {
+              backgroundColor: activeTab === 'share' ? theme.colors.accent : theme.colors.surface,
+              borderColor: activeTab === 'share' ? theme.colors.accent : theme.colors.border,
+            },
+          ]}>
+          <FontAwesome
+            name="share-alt"
+            size={14}
+            color={activeTab === 'share' ? '#000' : theme.colors.textSecondary}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={{
+              color: activeTab === 'share' ? '#000' : theme.colors.textSecondary,
+              fontWeight: activeTab === 'share' ? '700' : '500',
+            }}>
+            Project Share
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setActiveTab('store')}
+          style={[
+            styles.tab,
+            {
+              backgroundColor: activeTab === 'store' ? theme.colors.accent : theme.colors.surface,
+              borderColor: activeTab === 'store' ? theme.colors.accent : theme.colors.border,
+            },
+          ]}>
+          <FontAwesome
+            name="store"
+            size={14}
+            color={activeTab === 'store' ? '#000' : theme.colors.textSecondary}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={{
+              color: activeTab === 'store' ? '#000' : theme.colors.textSecondary,
+              fontWeight: activeTab === 'store' ? '700' : '500',
+            }}>
+            Pattern Store
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
+      {activeTab === 'share' ? (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
         {communityPosts.map((post, index) => (
           <SlideUp key={post.id} delay={index * 100}>
             <View style={[styles.postCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
@@ -107,7 +164,108 @@ export default function CommunityScreen() {
           </SlideUp>
         ))}
       </ScrollView>
+      ) : (
+        <PatternStoreTab />
+      )}
     </Screen>
+  );
+}
+
+function PatternStoreTab() {
+  const theme = useTheme();
+  const router = useRouter();
+
+  // Mock data for pattern store / call for testers
+  const testerCalls = [
+    {
+      id: 'tester1',
+      designer: 'CrochetDesigns Co.',
+      patternName: 'Cozy Winter Cardigan',
+      difficulty: 'Intermediate',
+      deadline: '2024-02-15',
+      requirements: 'Must complete within 2 weeks, provide feedback',
+      reward: 'Free pattern + early access',
+      image: 'https://images.unsplash.com/photo-1619250907298-76e018cb932e?q=80&w=600&auto=format&fit=crop',
+    },
+    {
+      id: 'tester2',
+      designer: 'YarnCraft Studio',
+      patternName: 'Amigurumi Bunny Collection',
+      difficulty: 'Beginner',
+      deadline: '2024-02-20',
+      requirements: 'Test all 3 sizes, document issues',
+      reward: 'Pattern bundle + credit',
+      image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?q=80&w=600&auto=format&fit=crop',
+    },
+    {
+      id: 'tester3',
+      designer: 'StitchMaster',
+      patternName: 'Lace Shawl Pattern',
+      difficulty: 'Advanced',
+      deadline: '2024-02-28',
+      requirements: 'Test with different yarn weights',
+      reward: 'Premium pattern access',
+      image: 'https://images.unsplash.com/photo-1584662889139-55364fb59d84?q=80&w=600&auto=format&fit=crop',
+    },
+  ];
+
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
+      <View style={styles.storeHeader}>
+        <Text style={[styles.storeDescription, { color: theme.colors.textSecondary }]}>
+          Help designers test new patterns and get early access to patterns.
+        </Text>
+      </View>
+
+      {testerCalls.map((call, index) => (
+        <SlideUp key={call.id} delay={index * 100}>
+          <View style={[styles.testerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={styles.testerHeader}>
+              <View style={styles.testerInfo}>
+                <Text style={[styles.designerName, { color: theme.colors.text }]}>{call.designer}</Text>
+                <Text style={[styles.patternName, { color: theme.colors.textSecondary }]}>{call.patternName}</Text>
+              </View>
+              <View style={[styles.difficultyBadge, { backgroundColor: theme.colors.accentMuted }]}>
+                <Text style={{ color: theme.colors.accent, fontSize: 11, fontWeight: '600' }}>
+                  {call.difficulty}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.testerImageContainer}>
+              <Image source={{ uri: call.image }} style={styles.testerImage} />
+            </View>
+
+            <View style={styles.testerDetails}>
+              <View style={styles.detailRow}>
+                <FontAwesome name="calendar" size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.detailText, { color: theme.colors.textSecondary }]}>
+                  Deadline: {call.deadline}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <FontAwesome name="check-circle" size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.detailText, { color: theme.colors.textSecondary }]}>
+                  {call.requirements}
+                </Text>
+              </View>
+              <View style={[styles.rewardBox, { backgroundColor: theme.colors.accentMuted, borderColor: theme.colors.accent }]}>
+                <FontAwesome name="gift" size={14} color={theme.colors.accent} />
+                <Text style={[styles.rewardText, { color: theme.colors.accent }]}>{call.reward}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.applyButton, { backgroundColor: theme.colors.accent }]}
+              onPress={() => {
+                // TODO: Implement apply functionality
+              }}>
+              <Text style={styles.applyButtonText}>Apply to Test</Text>
+            </TouchableOpacity>
+          </View>
+        </SlideUp>
+      ))}
+    </ScrollView>
   );
 }
 
@@ -222,5 +380,110 @@ const styles = StyleSheet.create({
   patternLink: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  storeHeader: {
+    marginBottom: 20,
+  },
+  storeDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  testerCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  testerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 16,
+    paddingBottom: 12,
+  },
+  testerInfo: {
+    flex: 1,
+  },
+  designerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  patternName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  difficultyBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  testerImageContainer: {
+    width: '100%',
+    aspectRatio: 1.5,
+    backgroundColor: '#333',
+  },
+  testerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  testerDetails: {
+    padding: 16,
+    gap: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  rewardBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  rewardText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  applyButton: {
+    margin: 16,
+    marginTop: 0,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#000',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });

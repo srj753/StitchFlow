@@ -5,7 +5,9 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useTheme } from '@/hooks/useTheme';
+import { useToast } from '@/hooks/useToast';
 import { usePatternStore } from '@/store/usePatternStore';
 import { PatternDifficulty } from '@/types/pattern';
 
@@ -14,6 +16,7 @@ const difficultyOptions: PatternDifficulty[] = ['beginner', 'intermediate', 'adv
 export default function ImportPatternScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const addPattern = usePatternStore((state) => state.addPattern);
   const [name, setName] = useState('');
   const [designer, setDesigner] = useState('');
@@ -26,21 +29,31 @@ export default function ImportPatternScreen() {
   const [fileName, setFileName] = useState<string | undefined>();
   const [fileUri, setFileUri] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf'],
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
-    if (!result.canceled && result.assets?.length) {
-      const doc = result.assets[0];
-      setFileUri(doc.uri);
-      setFileName(doc.name);
+    try {
+      setIsLoadingFile(true);
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (!result.canceled && result.assets?.length) {
+        const doc = result.assets[0];
+        setFileUri(doc.uri);
+        setFileName(doc.name);
+        showSuccess('PDF attached');
+      }
+    } catch (error) {
+      showError('Failed to pick file');
+    } finally {
+      setIsLoadingFile(false);
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       setError('A pattern name is required.');
       return;
@@ -55,20 +68,28 @@ export default function ImportPatternScreen() {
     }
     setError(undefined);
 
-    addPattern({
-      name,
-      designer,
-      description,
-      difficulty,
-      referenceUrl: referenceUrl.trim() || undefined,
-      fileUri,
-      yarnWeight,
-      hookSize,
-      notes,
-      tags: [],
-      moods: [],
-    });
-    router.replace('/patterns');
+    try {
+      setIsSubmitting(true);
+      addPattern({
+        name,
+        designer,
+        description,
+        difficulty,
+        referenceUrl: referenceUrl.trim() || undefined,
+        fileUri,
+        yarnWeight,
+        hookSize,
+        notes,
+        tags: [],
+        moods: [],
+      });
+      showSuccess('Pattern saved to library');
+      router.replace('/patterns');
+    } catch (error) {
+      showError('Failed to save pattern');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -142,13 +163,19 @@ export default function ImportPatternScreen() {
         />
         <TouchableOpacity
           onPress={handlePickFile}
+          disabled={isLoadingFile}
           style={[
             styles.fileButton,
             { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
+            isLoadingFile && { opacity: 0.6 },
           ]}>
-          <Text style={{ color: theme.colors.textSecondary }}>
-            {fileName ? `Attached: ${fileName}` : 'Attach PDF (optional)'}
-          </Text>
+          {isLoadingFile ? (
+            <LoadingSpinner size="small" />
+          ) : (
+            <Text style={{ color: theme.colors.textSecondary }}>
+              {fileName ? `Attached: ${fileName}` : 'Attach PDF (optional)'}
+            </Text>
+          )}
         </TouchableOpacity>
       </Card>
 
@@ -181,8 +208,17 @@ export default function ImportPatternScreen() {
 
       <TouchableOpacity
         onPress={handleSubmit}
-        style={[styles.submitButton, { backgroundColor: theme.colors.accent }]}>
-        <Text style={styles.submitButtonText}>Save to library</Text>
+        disabled={isSubmitting}
+        style={[
+          styles.submitButton,
+          { backgroundColor: theme.colors.accent },
+          isSubmitting && { opacity: 0.6 },
+        ]}>
+        {isSubmitting ? (
+          <LoadingSpinner size="small" color="#000" />
+        ) : (
+          <Text style={styles.submitButtonText}>Save to library</Text>
+        )}
       </TouchableOpacity>
     </Screen>
   );

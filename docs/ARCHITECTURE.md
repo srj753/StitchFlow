@@ -1,6 +1,6 @@
 # Crochet App Architecture
 
-**Last updated:** November 21, 2024
+**Last updated:** December 2024
 
 ## Current Status
 
@@ -29,27 +29,51 @@ crochet-reboot/
 │   ├── Screen.tsx
 │   ├── projects/
 │   │   ├── ProjectCard.tsx
-│   │   └── ProjectForm.tsx
+│   │   ├── ProjectForm.tsx
+│   │   ├── ProjectTabs.tsx
+│   │   ├── TrackView.tsx
+│   │   ├── PatternView.tsx
+│   │   ├── StudioView.tsx
+│   │   └── AssistantView.tsx
 │   ├── patterns/
 │   │   └── PatternCard.tsx
+│   ├── counters/
+│   │   ├── Counter.tsx
+│   │   └── LinkedCounterGroup.tsx
+│   ├── journal/
+│   │   └── JournalEntry.tsx
+│   ├── photos/
+│   │   └── PhotoLightbox.tsx
+│   ├── ui/
+│   │   ├── LoadingSpinner.tsx
+│   │   ├── Toast.tsx
+│   │   └── ToastProvider.tsx
 │   └── color/
 │       └── ColorPickerModal.tsx
 ├── store/                 # Zustand state management
-│   ├── useProjectsStore.ts        # Project data & actions
+│   ├── useProjectsStore.ts        # Project data & actions (with counters, journal, photos)
+│   ├── usePatternStore.ts         # Pattern library & imported patterns
 │   ├── usePatternDraftStore.ts    # Pattern maker drafts
-│   └── useAppearanceStore.ts      # Theme preferences
+│   ├── useYarnStore.ts            # Yarn stash management
+│   ├── useAppearanceStore.ts      # Theme preferences (light/dark/custom accent)
+│   └── useSettingsStore.ts        # App settings (AI toggle, screen wake, etc.)
 ├── types/                 # TypeScript type definitions
 │   ├── project.ts
 │   └── pattern.ts
 ├── hooks/                 # Custom React hooks
-│   ├── useTheme.ts
-│   └── useEffectiveColorScheme.ts
+│   ├── useTheme.ts                # Theme hook with custom accent support
+│   ├── useEffectiveColorScheme.ts  # System theme detection
+│   ├── useToast.tsx                # Toast notification system
+│   ├── useKeepScreenAwake.ts       # Screen wake lock
+│   └── useVoiceCommandStub.ts      # Voice command placeholder
 ├── lib/                   # Utilities & helpers
-│   ├── storage.ts         # AsyncStorage (web)
+│   ├── storage.ts         # AsyncStorage (web) - synchronous getItem for Zustand
 │   ├── storage.native.ts  # AsyncStorage (native)
-│   ├── theme.ts
-│   ├── color.ts
-│   └── patternDraft.ts
+│   ├── theme.ts           # Theme system with custom accent colors
+│   ├── color.ts           # Color utilities
+│   ├── patternDraft.ts    # Pattern draft utilities
+│   ├── patternParser.ts   # Pattern text parsing for checklists
+│   └── dataExport.ts      # Data export/import functionality
 ├── data/                  # Static/mock data
 │   └── patterns/
 │       └── catalog.ts
@@ -70,18 +94,56 @@ type Project = {
   hookSizeMm?: number;
   targetHeightInches?: number;
   totalRoundsEstimate?: number;
-  currentRound: number;           // Basic counter
+  currentRound: number;           // Legacy counter (kept for backwards compat)
   currentHeightInches: number;
+  
+  // New counter system
+  counters: ProjectCounter[];      // Multiple counters per project
+  
   notes?: string;
   patternSnippet?: string;
   status: 'active' | 'paused' | 'finished';
   sections: ProjectSection[];
-  roundLog: RoundLogEntry[];      // History of counter changes
+  roundLog: RoundLogEntry[];      // History of counter changes (legacy)
+  
+  // New features
+  journal: JournalEntry[];         // Project timeline/journal
+  photos: string[];                // Array of photo URIs
+  thumbnail?: string;              // Project thumbnail image
+  timeSpentMinutes: number;        // Time tracking
+  linkedYarns: ProjectYarn[];     // Yarn allocation to project
+  colorPalette?: string[];
+  
   createdAt: string;
   updatedAt: string;
   lastOpenedAt?: string;
   sourceUrl?: string;
-  colorPalette?: string[];
+};
+
+type ProjectCounter = {
+  id: string;
+  projectId: string;
+  type: 'row' | 'stitch' | 'custom';
+  label: string;                  // e.g., "Main body", "Left sleeve"
+  currentValue: number;
+  targetValue?: number;
+  lastUpdated: string;
+  linkedCounterIds?: string[];    // IDs of counters linked to this one (for auto-sum)
+};
+
+type JournalEntry = {
+  id: string;
+  projectId: string;
+  type: 'note' | 'progress' | 'finished' | 'photo' | 'milestone';
+  title?: string;
+  text?: string;
+  photoUri?: string;
+  metadata?: {
+    roundsCompleted?: number;
+    heightAchieved?: number;
+    [key: string]: any;
+  };
+  createdAt: string;
 };
 
 type ProjectSection = {
@@ -116,12 +178,16 @@ type Pattern = {
   tags: string[];
   palette: string[];
   referenceUrl?: string;
+  fileUri?: string;                // PDF file URI for imported patterns
   snippet?: string;
   estimatedRounds?: number;
   targetHeightInches?: number;
   notes?: string;
   hero?: boolean;
   patternSourceType?: 'external' | 'built-in' | 'my-pattern';
+  sourceType?: 'catalog' | 'imported' | 'draft';
+  importedAt?: string;
+  rowChecklist?: string[];         // Array of completed row IDs (for interactive checklist)
 };
 ```
 
@@ -149,19 +215,40 @@ type PatternDraft = {
 **Zustand** stores with AsyncStorage persistence:
 
 1. **useProjectsStore**
-   - Projects array
+   - Projects array with full project data
    - Active project ID
-   - Actions: addProject, updateProject, incrementRound, incrementHeight, etc.
-   - Persisted to `knotiq-projects`
+   - **Counter Actions**: addCounter, updateCounter, updateCounterLabel, deleteCounter, linkCounters, unlinkCounter
+   - **Journal Actions**: addJournalEntry, deleteJournalEntry
+   - **Photo Actions**: addPhoto, deletePhoto
+   - **Yarn Actions**: linkYarn, updateLinkedYarn, unlinkYarn
+   - **Legacy Actions**: incrementRound, incrementHeight (kept for backwards compat)
+   - Persisted to `knotiq-projects` with migration support
 
-2. **usePatternDraftStore**
+2. **usePatternStore**
+   - Patterns array (imported patterns)
+   - Actions: addPattern, deletePattern, toggleRowChecklist, clearRowChecklist
+   - Persisted to `knotiq-patterns`
+
+3. **useYarnStore**
+   - Yarns array (yarn stash inventory)
+   - Actions: addYarn, updateYarn, deleteYarn
+   - Persisted to `knotiq-yarns`
+
+4. **usePatternDraftStore**
    - Single draft object (auto-saves)
    - Actions: setMeta, addSection, addRow, updateRow, etc.
    - Persisted to `knotiq-pattern-draft`
 
-3. **useAppearanceStore**
+5. **useAppearanceStore**
    - Theme mode (system/light/dark)
+   - Custom accent color support
    - Persisted to `knotiq-appearance`
+
+6. **useSettingsStore**
+   - AI Assistant toggle
+   - Keep screen awake setting
+   - Voice hints enabled
+   - Persisted to `knotiq-settings`
 
 ### Navigation (Expo Router)
 
@@ -182,15 +269,28 @@ type PatternDraft = {
 ✅ **Projects**
 - List view with status filter (active/paused/finished/all)
 - Create project with pattern metadata, yarn info, color palettes
-- Project detail with basic counters (round/height)
+- Project detail with tabbed interface (Track, Pattern, Studio, AI)
+- **Advanced Counter System**:
+  - Multiple counters per project (row, stitch, custom)
+  - Large, thumb-friendly increment buttons (+1, +5, +10, +20)
+  - Manual edit (tap to type)
+  - **Linked Counters**: Link multiple counters (e.g., left/right sleeves) with auto-sum
+  - Visual progress bars for targets
+  - Haptic feedback on increments
 - Quick adjust buttons on cards
 - Pattern source tracking
 - Editable notes and snippets
+- **Journal/Timeline**: Add notes, progress updates, photos with timestamps
+- **Photo Gallery**: Add progress photos, view in lightbox
+- **Yarn Linking**: Link yarn from stash to projects, track usage
 
 ✅ **Pattern Library**
-- Curated pattern catalog (6 sample patterns)
+- Curated pattern catalog (sample patterns)
+- Import patterns (PDF or reference URL)
 - Search & filter (difficulty, mood, tags)
 - Pattern cards with preview
+- **Interactive Row Checklist**: Check off completed rows in pattern view
+- Pattern detail with Smart View (parsed checklist) and Original Source tabs
 - "Add to project" flow (prefills create form)
 - "Preview instructions" flow (loads into Pattern Maker)
 
@@ -213,32 +313,45 @@ type PatternDraft = {
 
 ✅ **Settings**
 - Theme mode selector (system/light/dark)
-- "Cycle theme" button
+- Custom accent color picker
+- AI Assistant toggle (controls visibility of AI tab in projects)
+- Keep screen awake toggle
+- Unit converter tool
+- Data export/import (JSON backup)
+- Profile summary view
 
 ✅ **Theming**
-- Light/dark mode support
-- Custom color palette
+- Light/dark mode support with system preference detection
+- Custom accent color support
 - Consistent design system (Card, Screen components)
+- Full dark mode optimization across all screens
+- Modern UI with glass-morphism effects, rounded corners, consistent spacing
+
+✅ **UX Enhancements**
+- Loading states with spinners for async operations
+- Toast notifications for success/error feedback
+- Haptic feedback on counter increments
+- Smooth animations and transitions
+- Responsive layouts for mobile and web
 
 ### Known Gaps & Issues
 
-❌ **Missing from user requirements:**
-- **Counters don't persist across app restarts properly** (basic round counter exists but needs robust implementation)
-- **No stitch counter** (only round counter exists)
-- **No yarn stash management** (completely missing)
-- **No photos/image support** (missing)
-- **No project journal/timeline** (only roundLog, not user-facing)
-- **No voice commands** (not started)
-- **No PDF/document picker** (patterns are mock data only)
-- **No gauge calculator or yarn estimator**
-- **Community is just a placeholder**
+✅ **Completed Core Features:**
+- ✅ **Robust Counters**: Multiple counters per project with persistence, large buttons, manual edit, haptic feedback
+- ✅ **Linked Counters**: Multi-part counter support (e.g., left/right sleeves) with auto-sum
+- ✅ **Yarn Stash Management**: Full CRUD for yarn inventory, linking to projects
+- ✅ **Photos Support**: Image picker, photo gallery, lightbox viewer
+- ✅ **Project Journal/Timeline**: Notes, progress updates, photos with timestamps
+- ✅ **Pattern Import**: PDF/document picker, reference URL support
+- ✅ **Interactive Pattern Checklists**: Row-by-row completion tracking in pattern view
+- ✅ **Loading States**: Spinners and toast notifications for async operations
 
-❌ **Structural issues:**
-- Too many top-level tabs (6) - overwhelming
-- Pattern Maker as a separate tab feels disconnected
-- No clear "Add Project" CTA from patterns
-- Counter UX needs work (persistence, larger buttons, manual edit)
-- No multi-part counters (left/right sleeves, etc.)
+❌ **Remaining Gaps:**
+- **Voice commands** (stub exists, not implemented)
+- **Advanced pattern parsing** (AI/OCR for PDFs - basic text parsing exists)
+- **Gauge calculator** (not started)
+- **Yarn estimator** (basic exists, could be enhanced)
+- **Community features** (UI exists, backend not connected)
 
 ---
 
@@ -270,66 +383,45 @@ Based on user survey feedback, we need to:
 
 ### Phase 2: Core MVP Features (Priority Order)
 
-#### 2.1 Robust Counters (CRITICAL)
-- [ ] Persistent stitch + row counters per project
-- [ ] Large, thumb-friendly +1/-1 buttons
-- [ ] Quick increment buttons (+5, +10, +20)
-- [ ] Manual edit (tap number to type)
-- [ ] Counter state survives app background/lock
-- [ ] Visual feedback (haptics if available)
-- [ ] Optional: Multi-part counters (for symmetric pieces)
+#### 2.1 Robust Counters (CRITICAL) ✅ COMPLETED
+- [x] Persistent stitch + row counters per project
+- [x] Large, thumb-friendly +1/-1 buttons
+- [x] Quick increment buttons (+5, +10, +20)
+- [x] Manual edit (tap number to type)
+- [x] Counter state survives app background/lock
+- [x] Visual feedback (haptics if available)
+- [x] Multi-part counters (for symmetric pieces) - **Linked Counters feature**
 
-#### 2.2 Yarn Stash Management (NEW)
-- [ ] `/patterns/stash` route (sub-tab or nested)
-- [ ] Yarn data model:
-  ```typescript
-  type Yarn = {
-    id: string;
-    name: string;
-    brand?: string;
-    color: string;
-    weightCategory: string; // 'Lace', 'DK', 'Worsted', etc.
-    metersPerSkein: number;
-    yardagePerSkein: number;
-    skeinsOwned: number;
-    skeinsReserved: number; // Allocated to projects
-    notes?: string;
-    createdAt: string;
-  };
-  ```
-- [ ] CRUD for yarn entries
-- [ ] Filter by weight/color
-- [ ] Summary stats ("You have X yarns, Y total meters")
-- [ ] Link yarn to projects (track usage)
+#### 2.2 Yarn Stash Management (NEW) ✅ COMPLETED
+- [x] `/patterns/stash` route (sub-tab or nested)
+- [x] Yarn data model implemented
+- [x] CRUD for yarn entries
+- [x] Filter by weight/color
+- [x] Summary stats ("You have X yarns, Y total meters")
+- [x] Link yarn to projects (track usage)
 
-#### 2.3 Project Journal & Timeline
-- [ ] Add `journalEntries` to Project type:
-  ```typescript
-  type JournalEntry = {
-    id: string;
-    projectId: string;
-    type: 'note' | 'progress' | 'finished' | 'photo';
-    text?: string;
-    photoUri?: string;
-    createdAt: string;
-  };
-  ```
-- [ ] Display timeline in project detail
-- [ ] Auto-log when project marked finished
-- [ ] Manual "Add note" button
+#### 2.3 Project Journal & Timeline ✅ COMPLETED
+- [x] `JournalEntry` type added to Project
+- [x] Display timeline in project detail (TrackView)
+- [x] Auto-log when project marked finished
+- [x] Manual "Add note" button
+- [x] Support for multiple entry types (note, progress, finished, photo, milestone)
 
-#### 2.4 Photos Support
-- [ ] Add `expo-image-picker` dependency
-- [ ] Photo picker button in project detail
-- [ ] Display photos in journal timeline
-- [ ] Store photo URIs in project data
+#### 2.4 Photos Support ✅ COMPLETED
+- [x] `expo-image-picker` dependency added
+- [x] Photo picker button in project detail
+- [x] Display photos in journal timeline
+- [x] Photo gallery with lightbox viewer
+- [x] Store photo URIs in project data
+- [x] Horizontal scrollable photo gallery
 
-#### 2.5 Pattern Import (Phase 1)
-- [ ] Keep current link/text import
-- [ ] Add `expo-document-picker` for PDF metadata
-- [ ] Store PDF path/URI (no parsing yet)
-- [ ] Show PDF in webview or external viewer
-- [ ] Add TODO comments for future OCR/AI parsing
+#### 2.5 Pattern Import (Phase 1) ✅ COMPLETED
+- [x] Link/text import supported
+- [x] `expo-document-picker` for PDF metadata
+- [x] Store PDF path/URI
+- [x] Show PDF in webview or external viewer
+- [x] Basic pattern text parsing for interactive checklists
+- [ ] Advanced OCR/AI parsing (future enhancement)
 
 ### Phase 3: Stubs for Future Features
 
@@ -341,12 +433,14 @@ Document interfaces and add placeholders for:
 - [ ] Sync/backend integration
 - [ ] Community features (share/sell patterns)
 
-### Phase 4: Quality of Life
-- [ ] "Keep screen awake" toggle (expo-keep-awake)
-- [ ] Improved theming (more color options?)
-- [ ] Onboarding flow for first-time users
-- [ ] Export project data (JSON/PDF)
-- [ ] Backup/restore functionality
+### Phase 4: Quality of Life ✅ MOSTLY COMPLETED
+- [x] "Keep screen awake" toggle (expo-keep-awake)
+- [x] Improved theming (custom accent colors)
+- [ ] Onboarding flow for first-time users (not started)
+- [x] Export project data (JSON)
+- [x] Backup/restore functionality (import/export JSON)
+- [x] Loading states and toast notifications
+- [x] Unit converter tool
 
 ---
 
@@ -466,9 +560,10 @@ const styles = StyleSheet.create({
 
 ## 8. Open Questions
 
-1. **Should we support multiple active counters per project?**
-   - E.g., left/right sleeve counters that sum to total
-   - Complexity vs. usefulness trade-off
+1. **Should we support multiple active counters per project?** ✅ IMPLEMENTED
+   - ✅ Multiple counters per project supported
+   - ✅ Linked counters feature allows left/right sleeve counters that sum to total
+   - ✅ Visual indicators show linked counter groups
 
 2. **How deep should pattern parsing go in Phase 1?**
    - Just metadata extraction from PDFs?
@@ -494,15 +589,15 @@ const styles = StyleSheet.create({
   "zustand": "^5.0.8",
   "@react-native-async-storage/async-storage": "2.2.0",
   "expo-linear-gradient": "^15.0.7",
-  "expo-clipboard": "^8.0.7"
+  "expo-clipboard": "^8.0.7",
+  "expo-image-picker": "^16.0.0",
+  "expo-document-picker": "^12.0.0",
+  "expo-keep-awake": "^14.0.0",
+  "expo-haptics": "^14.0.0",
+  "expo-sharing": "^13.0.0",
+  "react-native-webview": "^15.0.0"
 }
 ```
-
-**To Add:**
-- `expo-image-picker` (photos)
-- `expo-document-picker` (PDFs)
-- `expo-keep-awake` (screen wake lock)
-- `react-native-haptic-feedback` or `expo-haptics` (counter feedback)
 
 ---
 
@@ -515,16 +610,96 @@ const styles = StyleSheet.create({
 
 ---
 
+## 11. Recent Architectural Changes (December 2024)
+
+### New Features & Components
+
+#### Linked Counters System
+- **Type Extension**: `ProjectCounter` now includes `linkedCounterIds?: string[]`
+- **Store Actions**: `linkCounters()` and `unlinkCounter()` in `useProjectsStore`
+- **Component**: `LinkedCounterGroup` displays linked counters with auto-sum total
+- **UI Pattern**: Linked counters are visually grouped with accent borders and link indicators
+- **Use Case**: Perfect for symmetric pieces (left/right sleeves, front/back panels)
+
+#### Pattern Row Checklist
+- **Type Extension**: `Pattern` now includes `rowChecklist?: string[]`
+- **Store Actions**: `toggleRowChecklist()` and `clearRowChecklist()` in `usePatternStore`
+- **Parser**: `lib/patternParser.ts` extracts rows/rounds from pattern text
+- **UI Pattern**: Interactive checklist in Pattern Detail screen with checkboxes and strikethrough
+- **Persistence**: Checklist state persists across app restarts
+
+#### Loading States & Toast System
+- **Components**: `LoadingSpinner` and `Toast` components in `components/ui/`
+- **Hook**: `useToast()` provides `showSuccess()`, `showError()`, `showInfo()`
+- **Pattern**: All async operations (photo picker, document picker, data export/import) show loading states
+- **UX**: Buttons disabled during operations, overlay spinners for long operations
+
+### Storage Architecture Updates
+
+#### Synchronous Web Storage
+- **Issue**: Zustand persistence on web had hydration lag with async `localStorage`
+- **Solution**: `lib/storage.ts` now uses synchronous `getItem()` for web
+- **Impact**: Stores rehydrate instantly on web, fixing data loading issues
+
+#### Data Migration Support
+- **Pattern**: Store migrations handled via version numbers in persist config
+- **Example**: `useProjectsStore` includes migration logic for new fields (`thumbnail`, `timeSpentMinutes`)
+
+### Component Architecture Patterns
+
+#### Counter System
+```
+Counter (standalone)
+  ├── Individual counter with increment buttons
+  └── Supports rename, delete, manual edit
+
+LinkedCounterGroup (grouped)
+  ├── Displays multiple linked counters
+  ├── Shows auto-calculated total
+  └── Individual increment controls per counter
+```
+
+#### Pattern View System
+```
+PatternView (project context)
+  ├── Parses project.patternSnippet
+  └── Interactive checklist (local state)
+
+Pattern Detail (library context)
+  ├── Parses pattern.snippet
+  └── Interactive checklist (persisted in pattern.rowChecklist)
+```
+
+### State Management Patterns
+
+#### Store Action Naming
+- **CRUD**: `add*`, `update*`, `delete*` for standard operations
+- **Toggle**: `toggle*` for boolean/array toggles
+- **Link**: `link*`, `unlink*` for relationship management
+
+#### Persistence Strategy
+- All stores use `createJSONStorage` with platform-specific storage
+- Sets converted to arrays for JSON serialization
+- Migration functions handle schema changes
+
 ## Conclusion
 
 The current app has a solid foundation with:
 - Clean routing (Expo Router)
-- State management (Zustand + persistence)
-- Theming system
-- Basic project tracking
-- Pattern library
+- State management (Zustand + persistence with migrations)
+- Theming system (light/dark/custom accent)
+- Advanced project tracking (counters, journal, photos, yarn linking)
+- Pattern library with interactive checklists
+- Comprehensive UX enhancements (loading states, toasts, haptics)
 
-**Next steps:** Follow the restructuring plan to make the interface less overwhelming, add missing core features (yarn stash, robust counters, photos, journal), and prepare stubs for advanced features.
+**Recent Achievements:**
+- ✅ Linked counters for multi-part projects
+- ✅ Interactive pattern row checklists
+- ✅ Loading states and toast notifications
+- ✅ Full dark mode optimization
+- ✅ Web app compatibility improvements
+
+**Next steps:** Continue polishing UX, add advanced pattern parsing (AI/OCR), implement voice commands, and connect community features to backend.
 
 
 

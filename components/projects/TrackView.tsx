@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Image,
   Modal,
   ScrollView,
@@ -15,13 +16,17 @@ import {
 } from 'react-native';
 
 import { Counter } from '@/components/counters/Counter';
+import { CounterPresetPicker } from '@/components/counters/CounterPresetPicker';
+import { LinkedCounterGroup } from '@/components/counters/LinkedCounterGroup';
 import { JournalEntry } from '@/components/journal/JournalEntry';
 import { PhotoLightbox } from '@/components/photos/PhotoLightbox';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useKeepScreenAwake } from '@/hooks/useKeepScreenAwake';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { useVoiceCommandStub } from '@/hooks/useVoiceCommandStub';
+import { useCounterPresetsStore } from '@/store/useCounterPresetsStore';
 import { useProjectsStore } from '@/store/useProjectsStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useYarnStore } from '@/store/useYarnStore';
@@ -40,10 +45,42 @@ export function TrackView({ project }: TrackViewProps) {
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Group counters by their linked status
+  const { linkedGroups, unlinkedCounters } = useMemo(() => {
+    const processedIds = new Set<string>();
+    const linkedGroups: string[][] = [];
+    const unlinkedCounters: typeof project.counters = [];
+
+    project.counters.forEach((counter) => {
+      if (processedIds.has(counter.id)) return;
+
+      const linkedIds = counter.linkedCounterIds || [];
+      if (linkedIds.length > 0) {
+        // This counter is part of a linked group
+        const group = [counter.id, ...linkedIds];
+        linkedGroups.push(group);
+        group.forEach((id) => processedIds.add(id));
+      } else {
+        // Check if this counter is linked to by another counter
+        const isLinkedTo = project.counters.some(
+          (c) => c.linkedCounterIds?.includes(counter.id)
+        );
+        if (!isLinkedTo) {
+          unlinkedCounters.push(counter);
+          processedIds.add(counter.id);
+        }
+      }
+    });
+
+    return { linkedGroups, unlinkedCounters };
+  }, [project.counters]);
+
   const updateCounter = useProjectsStore((state) => state.updateCounter);
   const updateCounterLabel = useProjectsStore((state) => state.updateCounterLabel);
   const addCounter = useProjectsStore((state) => state.addCounter);
   const deleteCounter = useProjectsStore((state) => state.deleteCounter);
+  const linkCounters = useProjectsStore((state) => state.linkCounters);
+  const unlinkCounter = useProjectsStore((state) => state.unlinkCounter);
   const updateProjectStatus = useProjectsStore((state) => state.updateProjectStatus);
   const addJournalEntry = useProjectsStore((state) => state.addJournalEntry);
   const deleteJournalEntry = useProjectsStore((state) => state.deleteJournalEntry);
@@ -65,6 +102,10 @@ export function TrackView({ project }: TrackViewProps) {
   const [linkAmount, setLinkAmount] = useState('1');
   const [linkError, setLinkError] = useState<string | undefined>();
   const [activeNotesTab, setActiveNotesTab] = useState<'pattern' | 'progress'>('pattern');
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [selectedCounterForLinking, setSelectedCounterForLinking] = useState<string | null>(null);
+  const [selectedCountersToLink, setSelectedCountersToLink] = useState<Set<string>>(new Set());
+  const [showPresetPicker, setShowPresetPicker] = useState(false);
   const [patternNotesDraft, setPatternNotesDraft] = useState('');
   const [progressNotesDraft, setProgressNotesDraft] = useState('');
   const voiceStub = useVoiceCommandStub();
@@ -315,51 +356,135 @@ export function TrackView({ project }: TrackViewProps) {
         {/* Counters Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>COUNTERS</Text>
-          {project.counters.map((counter) => (
-            <Counter
-              key={counter.id}
-              counter={counter}
-              onIncrement={(delta) => {
-                const newValue = counter.currentValue + delta;
-                updateCounter(project.id, counter.id, newValue);
-              }}
-              onSetValue={(value) => updateCounter(project.id, counter.id, value)}
-              onRename={(label) => {
-                updateCounterLabel(project.id, counter.id, label);
-                showSuccess('Counter renamed');
-              }}
-              onDelete={
-                project.counters.length > 1
-                  ? () => {
-                      deleteCounter(project.id, counter.id);
-                      showSuccess('Counter removed');
-                    }
-                  : undefined
-              }
-            />
-          ))}
+          
+          {linkedGroups.map((groupIds, groupIndex) => {
+            const groupCounters = project.counters.filter((c) => groupIds.includes(c.id));
+            if (groupCounters.length < 2) return null;
 
-          <TouchableOpacity
-            onPress={() => {
-              addCounter(project.id, {
-                type: 'custom',
-                label: `Counter ${project.counters.length + 1}`,
-                currentValue: 0,
+            return (
+              <LinkedCounterGroup
+                key={`linked-${groupIndex}`}
+                counters={groupCounters}
+                linkedIds={groupIds}
+                onIncrement={(counterId, delta) => {
+                  const counter = project.counters.find((c) => c.id === counterId);
+                  if (counter) {
+                    const newValue = counter.currentValue + delta;
+                    updateCounter(project.id, counterId, newValue);
+                  }
+                }}
+                onSetValue={(counterId, value) => {
+                  updateCounter(project.id, counterId, value);
+                }}
+                onUnlink={(counterId) => {
+                  const counter = project.counters.find((c) => c.id === counterId);
+                  Alert.alert(
+                    'Unlink Counter',
+                    `Are you sure you want to unlink "${counter?.label}"? It will no longer be grouped with other linked counters.`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Unlink',
+                        style: 'destructive',
+                        onPress: () => {
+                          unlinkCounter(project.id, counterId);
+                          showSuccess('Counter unlinked');
+                        },
+                      },
+                    ]
+                  );
+                }}
+              />
+            );
+          })}
+
+          {unlinkedCounters.map((counter) => {
+            const isLinked = counter.linkedCounterIds && counter.linkedCounterIds.length > 0;
+            return (
+              <Counter
+                key={counter.id}
+                counter={counter}
+                isLinked={isLinked}
+                onIncrement={(delta) => {
+                  const newValue = counter.currentValue + delta;
+                  updateCounter(project.id, counter.id, newValue);
+                }}
+                onSetValue={(value) => updateCounter(project.id, counter.id, value)}
+                onRename={(label) => {
+                  updateCounterLabel(project.id, counter.id, label);
+                  showSuccess('Counter renamed');
+                }}
+                onLink={() => {
+                  setSelectedCounterForLinking(counter.id);
+                  setSelectedCountersToLink(new Set());
+                  setShowLinkModal(true);
+                }}
+                onDelete={
+                  project.counters.length > 1
+                    ? () => {
+                        deleteCounter(project.id, counter.id);
+                        showSuccess('Counter removed');
+                      }
+                    : undefined
+                }
+              />
+            );
+          })}
+
+          <View style={styles.addCounterRow}>
+            <TouchableOpacity
+              onPress={() => {
+                addCounter(project.id, {
+                  type: 'custom',
+                  label: `Counter ${project.counters.length + 1}`,
+                  currentValue: 0,
+                });
+                showSuccess('Counter added');
+              }}
+              style={[
+                styles.addCounterButton,
+                {
+                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surfaceAlt,
+                },
+              ]}>
+              <FontAwesome name="plus" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
+              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
+                Add Counter
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              onPress={() => setShowPresetPicker(true)}
+              style={[
+                styles.addCounterButton,
+                {
+                  borderColor: theme.colors.accent,
+                  backgroundColor: theme.colors.accentMuted,
+                },
+              ]}>
+              <FontAwesome name="magic" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
+              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
+                Preset
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <CounterPresetPicker
+            visible={showPresetPicker}
+            onClose={() => setShowPresetPicker(false)}
+            onSelect={(preset) => {
+              preset.counters.forEach((counterConfig) => {
+                addCounter(project.id, {
+                  type: counterConfig.type,
+                  label: counterConfig.label,
+                  currentValue: 0,
+                  targetValue: counterConfig.targetValue,
+                });
               });
-              showSuccess('Counter added');
+              showSuccess(`${preset.name} preset applied`);
             }}
-            style={[
-              styles.addCounterButton,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
-              },
-            ]}>
-            <FontAwesome name="plus" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
-            <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
-              Add Counter
-            </Text>
-          </TouchableOpacity>
+          />
         </View>
 
         <View style={styles.section}>
@@ -424,12 +549,14 @@ export function TrackView({ project }: TrackViewProps) {
            </View>
 
           {project.linkedYarns.length === 0 ? (
-             <View style={[styles.emptyStateCard, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
-                 <FontAwesome name="inbox" size={24} color={theme.colors.muted} style={{ marginBottom: 8 }} />
-                 <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
-                    Link yarn from your stash to track usage.
-                 </Text>
-             </View>
+             <EmptyState
+               compact
+               icon={{ name: 'inbox', size: 32 }}
+               title="No yarn linked"
+               description="Link yarn from your stash to track usage in this project."
+               actionLabel="Link Yarn"
+               onAction={() => setShowYarnModal(true)}
+             />
           ) : (
             <View style={styles.yarnList}>
               {project.linkedYarns.map((link) => {
@@ -506,12 +633,14 @@ export function TrackView({ project }: TrackViewProps) {
           {isLoadingPhoto && <LoadingSpinner overlay />}
           
           {project.photos.length === 0 ? (
-            <View style={[styles.emptyStateCard, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
-                 <FontAwesome name="camera" size={24} color={theme.colors.muted} style={{ marginBottom: 8 }} />
-                 <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
-                    Document your progress with photos.
-                 </Text>
-             </View>
+            <EmptyState
+              compact
+              icon={{ name: 'camera', size: 32 }}
+              title="No photos yet"
+              description="Document your progress by adding photos of your work."
+              actionLabel="Add Photo"
+              onAction={handleAddPhoto}
+            />
           ) : (
             <ScrollView
               horizontal
@@ -600,7 +729,7 @@ export function TrackView({ project }: TrackViewProps) {
                 </View>
            </View>
 
-          {project.journal.length > 0 && (
+          {project.journal.length > 0 ? (
             <View style={styles.journalList}>
               {project.journal.map((entry) => (
                 <JournalEntry
@@ -613,6 +742,13 @@ export function TrackView({ project }: TrackViewProps) {
                 />
               ))}
             </View>
+          ) : (
+            <EmptyState
+              compact
+              icon={{ name: 'book', size: 32 }}
+              title="No journal entries yet"
+              description="Add notes, milestones, or progress updates to track your journey."
+            />
           )}
         </View>
       </View>
@@ -725,6 +861,112 @@ export function TrackView({ project }: TrackViewProps) {
           </View>
         </View>
       </Modal>
+      {/* Link Counter Modal */}
+      <Modal
+        visible={showLinkModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowLinkModal(false);
+          setSelectedCounterForLinking(null);
+          setSelectedCountersToLink(new Set());
+        }}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Link Counters</Text>
+            <Text style={{ color: theme.colors.textSecondary, marginBottom: 16, fontSize: 14 }}>
+              Select counters to link with "{project.counters.find((c) => c.id === selectedCounterForLinking)?.label}". Linked counters will show a combined total.
+            </Text>
+
+            <ScrollView style={{ maxHeight: 300 }}>
+              {unlinkedCounters
+                .filter((c) => c.id !== selectedCounterForLinking)
+                .map((counter) => {
+                  const isSelected = selectedCountersToLink.has(counter.id);
+                  return (
+                    <TouchableOpacity
+                      key={counter.id}
+                      onPress={() => {
+                        const next = new Set(selectedCountersToLink);
+                        if (isSelected) {
+                          next.delete(counter.id);
+                        } else {
+                          next.add(counter.id);
+                        }
+                        setSelectedCountersToLink(next);
+                      }}
+                      style={[
+                        styles.modalYarnOption,
+                        {
+                          borderColor: isSelected ? theme.colors.accent : theme.colors.border,
+                          backgroundColor: isSelected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
+                          marginBottom: 8,
+                        },
+                      ]}>
+                      <Text
+                        style={{
+                          color: isSelected ? theme.colors.accent : theme.colors.text,
+                          fontWeight: '600',
+                        }}>
+                        {counter.label}
+                      </Text>
+                      <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
+                        Current: {counter.currentValue}
+                        {counter.targetValue ? ` / ${counter.targetValue}` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+            </ScrollView>
+
+            {unlinkedCounters.filter((c) => c.id !== selectedCounterForLinking).length === 0 && (
+              <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginVertical: 20 }}>
+                No other counters available to link.
+              </Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowLinkModal(false);
+                  setSelectedCounterForLinking(null);
+                  setSelectedCountersToLink(new Set());
+                }}
+                style={[
+                  styles.modalButton,
+                  {
+                    borderColor: theme.colors.border,
+                  },
+                ]}>
+                <Text style={{ color: theme.colors.textSecondary }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedCounterForLinking && selectedCountersToLink.size > 0) {
+                    const allIds = [selectedCounterForLinking, ...Array.from(selectedCountersToLink)];
+                    linkCounters(project.id, allIds);
+                    showSuccess(`${selectedCountersToLink.size + 1} counters linked`);
+                    setShowLinkModal(false);
+                    setSelectedCounterForLinking(null);
+                    setSelectedCountersToLink(new Set());
+                  }
+                }}
+                disabled={selectedCountersToLink.size === 0}
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  {
+                    backgroundColor: theme.colors.accent,
+                    opacity: selectedCountersToLink.size === 0 ? 0.5 : 1,
+                  },
+                ]}>
+                <Text style={styles.modalButtonPrimaryText}>Link Counters</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <PhotoLightbox
         photos={project.photos}
         initialIndex={lightboxIndex}
@@ -872,14 +1114,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
+  addCounterRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
   addCounterButton: {
+    flex: 1,
     borderWidth: 1,
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    marginBottom: 16,
   },
   voiceStub: {
     borderWidth: 1,
@@ -956,14 +1203,6 @@ const styles = StyleSheet.create({
       fontSize: 14,
       fontWeight: '700',
       padding: 0, // reset
-  },
-  emptyStateCard: {
-      padding: 24,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 20,
-      borderWidth: 1,
-      borderStyle: 'dashed',
   },
   addPhotoButton: {
     borderWidth: 1,

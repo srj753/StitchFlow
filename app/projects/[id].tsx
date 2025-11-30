@@ -398,11 +398,12 @@ const styles = StyleSheet.create({
   },
   floatingContainer: {
     position: 'absolute',
-    bottom: 20, // Above tab bar if needed, or just bottom 20
+    bottom: 100, // Above tab bar (tab bar is ~80px + safe area)
     left: 0,
     right: 0,
     height: 100,
     justifyContent: 'center',
+    zIndex: 1000, // Ensure it's above content but below modals
   },
   counterDeck: {
     paddingHorizontal: 16, // Center the cards
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
-    marginRight: 0, 
+    marginRight: 16, // Add spacing between counters
   },
   counterLabel: {
     fontSize: 12,

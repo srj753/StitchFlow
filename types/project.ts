@@ -45,6 +45,7 @@ export type ProjectCounter = {
   currentValue: number;
   targetValue?: number;
   lastUpdated: string;
+  linkedCounterIds?: string[]; // IDs of counters linked to this one
 };
 
 export type Project = {

@@ -13,6 +13,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useTheme } from '@/hooks/useTheme';
 import { estimateYarnRequirement } from '@/lib/yarnEstimator';
 import { useYarnStore } from '@/store/useYarnStore';
@@ -23,6 +24,7 @@ export default function YarnStashScreen() {
   const router = useRouter();
   const yarns = useYarnStore((state) => state.yarns);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [weightFilter, setWeightFilter] = useState<YarnWeightCategory | 'all'>('all');
   const [estimatorWidth, setEstimatorWidth] = useState('40');
   const [estimatorHeight, setEstimatorHeight] = useState('60');
@@ -31,16 +33,16 @@ export default function YarnStashScreen() {
   const filteredYarns = useMemo(() => {
     return yarns.filter((yarn) => {
       const matchesSearch =
-        searchQuery.trim().length === 0 ||
-        yarn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        yarn.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        yarn.color.toLowerCase().includes(searchQuery.toLowerCase());
+        debouncedSearchQuery.trim().length === 0 ||
+        yarn.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        yarn.brand?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        yarn.color.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
 
       const matchesWeight = weightFilter === 'all' || yarn.weightCategory === weightFilter;
 
       return matchesSearch && matchesWeight;
     });
-  }, [yarns, searchQuery, weightFilter]);
+  }, [yarns, debouncedSearchQuery, weightFilter]);
 
   const totalSkeins = useMemo(
     () => yarns.reduce((sum, yarn) => sum + yarn.skeinsOwned, 0),

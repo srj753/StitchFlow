@@ -25,6 +25,7 @@ export type Pattern = {
   patternSourceType?: Project['patternSourceType'];
   sourceType?: 'catalog' | 'imported' | 'draft';
   importedAt?: string;
+  rowChecklist?: string[]; // Array of completed row IDs
 };
 
 export type PatternInput = {

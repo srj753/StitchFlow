@@ -6,6 +6,7 @@ import { Alert, Modal, StyleSheet, Switch, Text, TouchableOpacity, View } from '
 
 import { ColorPickerModal } from '@/components/color/ColorPickerModal';
 import { Screen } from '@/components/Screen';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { UnitConverter } from '@/components/tools/UnitConverter';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
@@ -22,24 +23,33 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showConverter, setShowConverter] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleExport = async () => {
     try {
+      setIsExporting(true);
       await exportAllData();
       showSuccess('Backup exported successfully');
     } catch (error) {
       showError('Failed to export backup');
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handleImport = async () => {
     try {
+      setIsImporting(true);
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled) return;
+      if (result.canceled) {
+        setIsImporting(false);
+        return;
+      }
 
       const fileUri = result.assets[0].uri;
       const response = await fetch(fileUri);
@@ -49,7 +59,7 @@ export default function SettingsScreen() {
         'Import backup?',
         'This will replace all your current data. Are you sure?',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: 'Cancel', style: 'cancel', onPress: () => setIsImporting(false) },
           {
             text: 'Import',
             style: 'destructive',
@@ -59,6 +69,8 @@ export default function SettingsScreen() {
                 showSuccess('Backup imported successfully');
               } catch (error) {
                 showError('Failed to import backup. File may be invalid.');
+              } finally {
+                setIsImporting(false);
               }
             },
           },
@@ -66,6 +78,7 @@ export default function SettingsScreen() {
       );
     } catch (error) {
       showError('Failed to open file picker');
+      setIsImporting(false);
     }
   };
 
@@ -200,26 +213,40 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>DATA</Text>
         <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-            <TouchableOpacity onPress={handleExport} style={styles.row}>
+            <TouchableOpacity 
+                onPress={handleExport} 
+                disabled={isExporting}
+                style={[styles.row, isExporting && { opacity: 0.6 }]}>
                 <View style={styles.iconLabelRow}>
                     <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
                         <FontAwesome name="download" size={16} color={theme.colors.text} />
                     </View>
                     <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Export Backup</Text>
                 </View>
-                <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+                {isExporting ? (
+                    <LoadingSpinner size="small" />
+                ) : (
+                    <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+                )}
             </TouchableOpacity>
             
             <View style={styles.divider} />
             
-            <TouchableOpacity onPress={handleImport} style={styles.row}>
+            <TouchableOpacity 
+                onPress={handleImport} 
+                disabled={isImporting}
+                style={[styles.row, isImporting && { opacity: 0.6 }]}>
                 <View style={styles.iconLabelRow}>
                     <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
                         <FontAwesome name="upload" size={16} color={theme.colors.text} />
                     </View>
                     <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Import Backup</Text>
                 </View>
-                <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+                {isImporting ? (
+                    <LoadingSpinner size="small" />
+                ) : (
+                    <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+                )}
             </TouchableOpacity>
         </View>
       </View>

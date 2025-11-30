@@ -14,6 +14,7 @@ import {
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { useProjectsStore } from '@/store/useProjectsStore';
@@ -62,11 +63,13 @@ export default function PublishProjectScreen() {
            </Text>
 
            {completedProjects.length === 0 ? (
-             <Card title="No finished projects">
-               <Text style={{ color: theme.colors.textSecondary }}>
-                 Mark a project as "Finished" in the tracking tab to share it here.
-               </Text>
-             </Card>
+             <EmptyState
+               icon={{ name: 'trophy', size: 48 }}
+               title="No finished projects"
+               description="Mark a project as 'Finished' in the tracking tab to share it with the community."
+               actionLabel="Go to Projects"
+               onAction={() => router.push('/projects')}
+             />
            ) : (
              completedProjects.map((p) => (
                <TouchableOpacity 

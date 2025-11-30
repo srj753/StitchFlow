@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Haptics from 'expo-haptics';
 import { useRef, useState } from 'react';
 import {
@@ -19,9 +20,11 @@ type CounterProps = {
   onSetValue: (value: number) => void;
   onRename?: (label: string) => void;
   onDelete?: () => void;
+  onLink?: () => void;
+  isLinked?: boolean;
 };
 
-export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete }: CounterProps) {
+export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete, onLink, isLinked }: CounterProps) {
   const theme = useTheme();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -91,6 +94,12 @@ export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete }
           <Text style={[styles.label, { color: theme.colors.text }]}>{counter.label}</Text>
         </TouchableOpacity>
         <View style={styles.headerActions}>
+          {onLink && (
+            <TouchableOpacity onPress={onLink} style={styles.linkButton}>
+              <FontAwesome name={isLinked ? "link" : "chain-broken"} size={12} color={isLinked ? theme.colors.accent : theme.colors.textSecondary} style={{ marginRight: 4 }} />
+              <Text style={{ color: isLinked ? theme.colors.accent : theme.colors.textSecondary, fontSize: 12 }}>Link</Text>
+            </TouchableOpacity>
+          )}
           {onRename && (
             <TouchableOpacity onPress={() => setShowRenameModal(true)} style={styles.renameButton}>
               <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Rename</Text>
@@ -342,11 +351,17 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
   },
   renameButton: {
     padding: 4,

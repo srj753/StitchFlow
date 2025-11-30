@@ -8,6 +8,7 @@ import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { useTheme } from '@/hooks/useTheme';
 import { patternCatalog } from '@/data/patterns/catalog';
+import { parsePatternText } from '@/lib/patternParser';
 import { usePatternStore } from '@/store/usePatternStore';
 
 export default function PatternDetailScreen() {
@@ -15,6 +16,7 @@ export default function PatternDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const importedPatterns = usePatternStore((state) => state.patterns);
+  const toggleRowChecklist = usePatternStore((state) => state.toggleRowChecklist);
   const pattern = useMemo(
     () =>
       patternCatalog.find((item) => item.id === id) ||
@@ -22,6 +24,16 @@ export default function PatternDetailScreen() {
     [id, importedPatterns],
   );
   const [tab, setTab] = useState<'smart' | 'original'>('smart');
+
+  // Parse pattern text for checklist
+  const parsedLines = useMemo(() => {
+    if (!pattern?.snippet) return [];
+    return parsePatternText(pattern.snippet);
+  }, [pattern?.snippet]);
+
+  const completedRows = useMemo(() => {
+    return new Set(pattern?.rowChecklist || []);
+  }, [pattern?.rowChecklist]);
 
   if (!pattern) {
     return (
@@ -142,17 +154,70 @@ export default function PatternDetailScreen() {
             
             <View style={[styles.card, { backgroundColor: theme.colors.surface, minHeight: 300 }]}>
                 {tab === 'smart' ? (
-                    <View style={styles.smartView}>
-                    <Text style={{ color: theme.colors.textSecondary, marginBottom: 12, lineHeight: 22 }}>
-                        {pattern.snippet ??
-                        'Smart parsing will surface steps, counts, and repeats as we roll out AI helpers.'}
-                    </Text>
-                    <View style={[styles.todoBox, { backgroundColor: theme.colors.surfaceAlt }]}>
-                        <Text style={{ color: theme.colors.muted, fontSize: 12 }}>
-                            ✨ AI Features Coming Soon: PDF parsing, stitch detection, and interactive checklists.
-                        </Text>
-                    </View>
-                    </View>
+                    parsedLines.length > 0 ? (
+                        <View style={styles.checklistContainer}>
+                            {parsedLines.map((line) => {
+                                const isDone = completedRows.has(line.id);
+                                const isHeader = line.type === 'header';
+
+                                if (isHeader) {
+                                    return (
+                                        <Text key={line.id} style={[styles.sectionHeader, { color: theme.colors.accent }]}>
+                                            {line.text}
+                                        </Text>
+                                    );
+                                }
+
+                                return (
+                                    <TouchableOpacity
+                                        key={line.id}
+                                        onPress={() => pattern && toggleRowChecklist(pattern.id, line.id)}
+                                        style={[
+                                            styles.checkRow,
+                                            {
+                                                backgroundColor: isDone ? theme.colors.surfaceAlt : theme.colors.surface,
+                                                borderColor: isDone ? 'transparent' : theme.colors.border,
+                                            },
+                                        ]}>
+                                        <View
+                                            style={[
+                                                styles.checkbox,
+                                                {
+                                                    borderColor: isDone ? theme.colors.accent : theme.colors.muted,
+                                                    backgroundColor: isDone ? theme.colors.accent : 'transparent',
+                                                },
+                                            ]}>
+                                            {isDone && <FontAwesome name="check" size={10} color="#000" />}
+                                        </View>
+                                        <Text
+                                            style={[
+                                                styles.lineText,
+                                                {
+                                                    color: isDone ? theme.colors.textSecondary : theme.colors.text,
+                                                    textDecorationLine: isDone ? 'line-through' : 'none',
+                                                },
+                                            ]}>
+                                            {line.text}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    ) : (
+                        <View style={styles.smartView}>
+                            <Text style={{ color: theme.colors.textSecondary, marginBottom: 12, lineHeight: 22 }}>
+                                {pattern.snippet ??
+                                'Smart parsing will surface steps, counts, and repeats as we roll out AI helpers.'}
+                            </Text>
+                            <View style={[styles.todoBox, { backgroundColor: theme.colors.surfaceAlt }]}>
+                                <Text style={{ color: theme.colors.muted, fontSize: 12 }}>
+                                    {pattern.snippet 
+                                        ? '✨ Pattern text detected. Interactive checklist will appear here once parsing is complete.'
+                                        : '✨ AI Features Coming Soon: PDF parsing, stitch detection, and interactive checklists.'}
+                                </Text>
+                            </View>
+                        </View>
+                    )
                 ) : pattern.referenceUrl ? (
                     <View style={styles.webviewWrapper}>
                     <WebView source={{ uri: pattern.referenceUrl }} />
@@ -307,5 +372,37 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     alignSelf: 'center',
+  },
+  checklistContainer: {
+    gap: 8,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  lineText: {
+    fontSize: 16,
+    lineHeight: 24,
+    flex: 1,
   },
 });

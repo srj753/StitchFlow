@@ -13,6 +13,7 @@ import {
 
 import { PatternCard } from '@/components/patterns/PatternCard';
 import { Screen } from '@/components/Screen';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { patternCatalog } from '@/data/patterns/catalog';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTheme } from '@/hooks/useTheme';
@@ -207,12 +208,24 @@ export default function PatternsScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <FontAwesome name="search" size={48} color={theme.colors.border} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-              No patterns found. Try adjusting your filters.
-            </Text>
-          </View>
+          <EmptyState
+            icon={{ name: 'search', size: 48 }}
+            title={query || difficulty !== 'all' ? "No patterns found" : "No patterns yet"}
+            description={
+              query || difficulty !== 'all'
+                ? "Try adjusting your search or filters to find what you're looking for."
+                : "Import patterns from PDFs or create your own custom patterns to get started."
+            }
+            actionLabel={query || difficulty !== 'all' ? "Clear Filters" : "Import Pattern"}
+            onAction={
+              query || difficulty !== 'all'
+                ? () => {
+                    setQuery('');
+                    setDifficulty('all');
+                  }
+                : () => router.push('/patterns/import' as any)
+            }
+          />
         }
         ListFooterComponent={<View style={{ height: 80 }} />}
         showsVerticalScrollIndicator={false}
@@ -328,15 +341,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     marginRight: 8,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    gap: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontSize: 16,
   },
 });

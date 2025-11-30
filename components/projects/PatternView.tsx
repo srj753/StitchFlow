@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useTheme } from '@/hooks/useTheme';
 import { parsePatternText } from '@/lib/patternParser';
 import { Project } from '@/types/project';
@@ -36,12 +37,11 @@ export function PatternView({ project }: PatternViewProps) {
   const renderSmartView = () => {
     if (parsedLines.length === 0) {
       return (
-        <View style={styles.emptyState}>
-          <FontAwesome name="file-text-o" size={48} color={theme.colors.border} />
-          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-            No pattern text found. Paste your pattern in the 'Track' tab to see the checklist here.
-          </Text>
-        </View>
+        <EmptyState
+          icon={{ name: 'file-text-o', size: 48 }}
+          title="No pattern text found"
+          description="Paste your pattern in the 'Track' tab to see the interactive checklist here."
+        />
       );
     }
 
@@ -198,18 +198,6 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    marginTop: 40,
-    gap: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontSize: 16,
-    lineHeight: 24,
   },
   checklistContainer: {
     gap: 8,
