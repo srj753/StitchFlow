@@ -26,7 +26,7 @@ export default function PatternsScreen() {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 300);
   const [difficulty, setDifficulty] = useState<DifficultyFilter>('all');
-  const importedPatterns = usePatternStore((state) => state.patterns);
+  const importedPatterns = usePatternStore((state: { patterns: Pattern[] }) => state.patterns);
 
   const allPatterns = useMemo(
     () => [...patternCatalog, ...importedPatterns],
@@ -51,8 +51,6 @@ export default function PatternsScreen() {
       return true;
     });
   }, [allPatterns, difficulty, debouncedQuery]);
-
-  const featuredPatterns = useMemo(() => patternCatalog.slice(0, 5), []);
 
   const handlePreview = (pattern: Pattern) => {
     router.push({
@@ -126,32 +124,6 @@ export default function PatternsScreen() {
             <Text style={[styles.actionChipText, { color: theme.colors.text }]}>Stash</Text>
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Featured Section */}
-      {!query && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Featured</Text>
-          <FlatList
-            horizontal
-            data={featuredPatterns}
-            keyExtractor={item => item.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredList}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => handlePreview(item)}
-                style={[styles.featuredCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-              >
-                <View style={[styles.featuredImage, { backgroundColor: item.palette?.[0] || theme.colors.surfaceAlt }]} />
-                <View style={styles.featuredContent}>
-                   <Text style={[styles.featuredTitle, { color: theme.colors.text }]} numberOfLines={1}>{item.name}</Text>
-                   <Text style={[styles.featuredDesigner, { color: theme.colors.muted }]} numberOfLines={1}>{item.designer}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      )}
 
       {/* Filters */}
       <View style={styles.filterRow}>
@@ -304,32 +276,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 12,
-  },
-  featuredList: {
-    gap: 12,
-  },
-  featuredCard: {
-    width: 140,
-    height: 180,
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginRight: 12,
-  },
-  featuredImage: {
-    flex: 1,
-    width: '100%',
-  },
-  featuredContent: {
-    padding: 12,
-  },
-  featuredTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  featuredDesigner: {
-    fontSize: 12,
   },
   filterRow: {
     flexDirection: 'row',

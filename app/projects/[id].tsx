@@ -28,6 +28,7 @@ export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const projects = useProjectsStore((state) => state.projects);
   const updateCounter = useProjectsStore((state) => state.updateCounter);
+  const updateProjectStatus = useProjectsStore((state) => state.updateProjectStatus);
   const deleteProject = useProjectsStore((state) => state.deleteProject);
   const { showSuccess } = useToast();
   
@@ -77,6 +78,32 @@ export default function ProjectDetailScreen() {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / CARD_WIDTH);
     setActiveCounterIndex(index);
+  };
+
+  const handleFinishProject = () => {
+    Alert.alert(
+      "Finish Project",
+      "Are you sure you want to mark this project as finished?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+            text: "Finish", 
+            onPress: () => {
+                updateProjectStatus(project.id, 'finished');
+                
+                // Check for yarn consumption
+                if (!project.linkedYarns || project.linkedYarns.length === 0) {
+                  Alert.alert(
+                    "No Yarn Linked",
+                    "We couldn't automatically deduct yarn from your stash because no yarn was linked to this project."
+                  );
+                } else {
+                  showSuccess("Project finished & yarn deducted!");
+                }
+            }
+        }
+      ]
+    );
   };
 
   const handleDeleteProject = () => {
@@ -152,6 +179,23 @@ export default function ProjectDetailScreen() {
                             <FontAwesome name="pencil" size={14} color={theme.colors.text} style={styles.menuIcon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>Edit Project</Text>
                         </TouchableOpacity>
+                        
+                        {project.status !== 'finished' && (
+                          <>
+                            <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    setShowMenu(false);
+                                    handleFinishProject();
+                                }}
+                            >
+                                <FontAwesome name="check-circle" size={14} color={theme.colors.accent} style={styles.menuIcon} />
+                                <Text style={[styles.menuText, { color: theme.colors.text }]}>Finish Project</Text>
+                            </TouchableOpacity>
+                          </>
+                        )}
+
                         <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
                         <TouchableOpacity 
                             style={styles.menuItem}

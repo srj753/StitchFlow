@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { exportAllData, importData } from '@/lib/dataExport';
+import { loadDemoData } from '@/lib/demoData';
 import { exportPresets, importPresets } from '@/lib/presetExport';
 import { ThemeMode, useAppearanceStore } from '@/store/useAppearanceStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -140,6 +141,24 @@ export default function SettingsScreen() {
     } finally {
       setIsImportingPresets(false);
     }
+  };
+
+  const handleLoadDemo = async () => {
+    Alert.alert(
+        'Load Demo Data?',
+        'This will add sample patterns, yarns, and projects to your library.',
+        [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+                text: 'Load', 
+                onPress: async () => {
+                    await loadDemoData();
+                    showSuccess('Demo data loaded!');
+                    router.push('/');
+                }
+            }
+        ]
+    );
   };
 
   return (
@@ -409,6 +428,18 @@ export default function SettingsScreen() {
                 ) : (
                     <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
                 )}
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+            
+            <TouchableOpacity onPress={handleLoadDemo} style={styles.row}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="database" size={16} color={theme.colors.text} />
+                    </View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Load Demo Data</Text>
+                </View>
+                <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
             </TouchableOpacity>
         </View>
       </View>

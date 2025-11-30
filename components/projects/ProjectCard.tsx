@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Haptics from 'expo-haptics';
+import { formatDistanceToNow } from 'date-fns';
 import { memo, useCallback, useMemo } from 'react';
 import {
     Image,
@@ -40,6 +41,14 @@ export const ProjectCard = memo(function ProjectCard({
     if (!rowCounter || !rowCounter.targetValue || rowCounter.targetValue <= 0) return undefined;
     return Math.min(100, (rowCounter.currentValue / rowCounter.targetValue) * 100);
   }, [rowCounter]);
+
+  const lastUpdated = useMemo(() => {
+    try {
+      return formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true });
+    } catch (e) {
+      return '';
+    }
+  }, [project.updatedAt]);
 
   const handleQuickAdjust = useCallback(
     (delta: number) => {
@@ -110,6 +119,11 @@ export const ProjectCard = memo(function ProjectCard({
               <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                 {project.patternName || 'Custom Pattern'}
               </Text>
+              {lastUpdated && (
+                <Text style={[styles.updated, { color: theme.colors.muted }]}>
+                  {lastUpdated}
+                </Text>
+              )}
             </View>
 
             {/* Stats Row */}
@@ -217,6 +231,10 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  updated: {
+    fontSize: 11,
+    marginTop: 2,
   },
   statsRow: {
     flexDirection: 'row',
