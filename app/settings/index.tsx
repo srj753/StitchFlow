@@ -1,11 +1,13 @@
-import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Card } from '@/components/Card';
 import { ColorPickerModal } from '@/components/color/ColorPickerModal';
 import { Screen } from '@/components/Screen';
+import { UnitConverter } from '@/components/tools/UnitConverter';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { exportAllData, importData } from '@/lib/dataExport';
@@ -20,6 +22,7 @@ export default function SettingsScreen() {
     useSettingsStore();
   const router = useRouter();
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showConverter, setShowConverter] = useState(false);
 
   const handleExport = async () => {
     try {
@@ -76,6 +79,24 @@ export default function SettingsScreen() {
           Account basics, theme controls, device sync, and future premium toggles will live here.
         </Text>
       </View>
+
+      <Card title="Tools" subtitle="Utilities">
+        <TouchableOpacity
+          onPress={() => setShowConverter(true)}
+          style={[
+            styles.toolButton,
+            { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
+          ]}>
+          <FontAwesome name="calculator" size={20} color={theme.colors.accent} style={{ marginRight: 12 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Unit Converter</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
+              Yarn lengths & weights
+            </Text>
+          </View>
+          <FontAwesome name="chevron-right" size={14} color={theme.colors.muted} />
+        </TouchableOpacity>
+      </Card>
 
       <Card title="Theme" subtitle="Display preference">
         <View style={styles.themeRow}>
@@ -222,6 +243,24 @@ export default function SettingsScreen() {
         ]}>
         <Text style={{ color: theme.colors.text }}>View profile summary</Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={showConverter}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowConverter(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Unit Converter</Text>
+              <TouchableOpacity onPress={() => setShowConverter(false)} style={styles.closeButton}>
+                <FontAwesome name="times" size={20} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+            <UnitConverter />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -250,6 +289,13 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 16,
     lineHeight: 24,
+  },
+  toolButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 16,
   },
   themeRow: {
     flexDirection: 'row',
@@ -311,5 +357,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 24,
+    padding: 20,
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  closeButton: {
+    padding: 8,
+  },
 });
-
