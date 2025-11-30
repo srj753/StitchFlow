@@ -6,12 +6,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import Colors from '@/constants/Colors';
-import { useTheme } from '@/hooks/useTheme';
-import { useAppearanceStore } from '@/store/useAppearanceStore';
-import { useEffectiveColorScheme } from '@/hooks/useEffectiveColorScheme';
-import { ToastProvider } from '@/hooks/useToast';
 import { ToastManagerWrapper } from '@/components/ui/ToastProvider';
+import Colors from '@/constants/Colors';
+import { useEffectiveColorScheme } from '@/hooks/useEffectiveColorScheme';
+import { useTheme } from '@/hooks/useTheme';
+import { ToastProvider } from '@/hooks/useToast';
+import { useAppearanceStore } from '@/store/useAppearanceStore';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -22,7 +22,7 @@ function TabBarIcon(props: {
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -68,15 +68,32 @@ function RootLayoutNav() {
         initialRouteName="home/index"
         screenOptions={{
           headerShown: false,
+          tabBarShowLabel: true,
           tabBarActiveTintColor: Colors[effectiveScheme].tint,
           tabBarInactiveTintColor: Colors[effectiveScheme].tabIconDefault,
           tabBarStyle: {
+            position: 'absolute',
+            bottom: 24,
+            left: 24,
+            right: 24,
+            height: 72,
+            borderRadius: 36,
             backgroundColor: theme.colors.surface,
-            borderTopColor: theme.colors.border,
+            borderTopWidth: 0,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.1,
+            shadowRadius: 20,
+            elevation: 10,
+            paddingBottom: 8,
+            paddingTop: 8,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: '600',
+            marginTop: -4,
           },
         }}>
         <Tabs.Screen
@@ -90,7 +107,7 @@ function RootLayoutNav() {
           name="projects"
           options={{
             title: 'Projects',
-            tabBarIcon: ({ color }) => <TabBarIcon name="tasks" color={color} />,
+            tabBarIcon: ({ color }) => <TabBarIcon name="heart-o" color={color} />,
             href: '/projects',
           }}
         />

@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
+import { SlideUp } from '@/components/animations/SlideUp';
 import { useTheme } from '@/hooks/useTheme';
 import { useProjectsStore } from '@/store/useProjectsStore';
 import { Project } from '@/types/project';
@@ -16,6 +18,7 @@ type ProjectCardProps = {
   project: Project;
   onPress?: () => void;
   isActive?: boolean;
+  index?: number; // For staggered animations
 };
 
 const statusCopy: Record<Project['status'], string> = {
@@ -34,6 +37,7 @@ export const ProjectCard = memo(function ProjectCard({
   project,
   onPress,
   isActive,
+  index = 0,
 }: ProjectCardProps) {
   const theme = useTheme();
   const incrementRound = useProjectsStore((state) => state.incrementRound);
@@ -77,6 +81,13 @@ export const ProjectCard = memo(function ProjectCard({
 
   const handleQuickAdjust = useCallback(
     (delta: number) => {
+      // Haptic feedback
+      if (delta > 0) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      
       if (rowCounter) {
         updateCounter(project.id, rowCounter.id, rowCounter.currentValue + delta);
       } else {
@@ -93,16 +104,17 @@ export const ProjectCard = memo(function ProjectCard({
   }, [onPress, project.id, setActiveProject]);
 
   return (
-    <TouchableOpacity
-      onPress={handleOpen}
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.card,
-          borderColor: isActive ? theme.colors.accent : theme.colors.border,
-        },
-        shadowStyle,
-      ]}>
+    <SlideUp delay={index * 50} duration={300}>
+      <TouchableOpacity
+        onPress={handleOpen}
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.card,
+            borderColor: isActive ? theme.colors.accent : theme.colors.border,
+          },
+          shadowStyle,
+        ]}>
       <View style={[styles.headerRow, styles.block]}>
         <View style={styles.titleColumn}>
           <Text style={[styles.title, { color: theme.colors.text }]}>{project.name}</Text>
@@ -221,6 +233,7 @@ export const ProjectCard = memo(function ProjectCard({
         Updated {new Date(project.updatedAt).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
+    </SlideUp>
   );
 });
 

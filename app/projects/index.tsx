@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -52,8 +53,13 @@ export default function ProjectsHomeScreen() {
     });
   };
 
-  const renderProject = ({ item }: { item: Project }) => (
-    <ProjectCard project={item} onPress={() => handleOpenProject(item.id)} />
+  const renderProject = ({ item, index }: { item: Project; index: number }) => (
+    <ProjectCard 
+      project={item} 
+      onPress={() => handleOpenProject(item.id)}
+      index={index}
+      isActive={item.id === activeProjectId}
+    />
   );
 
   const renderHeader = () => (
@@ -66,10 +72,18 @@ export default function ProjectsHomeScreen() {
             Keep yarn details, palette, and pattern snippets in one cozy dashboard.
           </Text>
         </View>
+        <TouchableOpacity
+          onPress={() => router.push('/projects/create')}
+          style={[
+            styles.createButton,
+            {
+              backgroundColor: theme.colors.accent,
+              shadowColor: theme.colors.accent,
+            },
+          ]}>
+          <FontAwesome name="plus" size={20} color="#000" />
+        </TouchableOpacity>
       </View>
-        <Text style={[styles.heroHint, { color: theme.colors.textSecondary }]}>
-          Need to create something new? Hop to the Home tab for a dedicated workspace.
-        </Text>
 
       <Card style={styles.sectionCard}>
         <View style={styles.statsRow}>
@@ -164,7 +178,7 @@ const styles = StyleSheet.create({
   heroRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   heroCopy: {
@@ -186,10 +200,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-    heroHint: {
-      fontSize: 13,
-      marginTop: 8,
-    },
+  createButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   sectionCard: {
     marginTop: 12,
   },
@@ -238,4 +259,3 @@ const styles = StyleSheet.create({
     height: 16,
   },
 });
-

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { SlideUp } from '@/components/animations/SlideUp';
 import { Card } from '@/components/Card';
 import { useTheme } from '@/hooks/useTheme';
 import { Pattern } from '@/types/pattern';
@@ -8,6 +9,7 @@ type PatternCardProps = {
   pattern: Pattern;
   onPreview: () => void;
   onSave: () => void;
+  index?: number; // For staggered animations
 };
 
 const difficultyCopy: Record<Pattern['difficulty'], string> = {
@@ -16,15 +18,16 @@ const difficultyCopy: Record<Pattern['difficulty'], string> = {
   advanced: 'Advanced challenge',
 };
 
-export function PatternCard({ pattern, onPreview, onSave }: PatternCardProps) {
+export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCardProps) {
   const theme = useTheme();
   const palette = pattern.palette.slice(0, 4);
 
   return (
-    <Card
-      title={pattern.name}
-      subtitle={`${pattern.designer} · ${difficultyCopy[pattern.difficulty]}`}
-      style={styles.card}>
+    <SlideUp delay={index * 50} duration={300}>
+      <Card
+        title={pattern.name}
+        subtitle={`${pattern.designer} · ${difficultyCopy[pattern.difficulty]}`}
+        style={styles.card}>
       {pattern.sourceType === 'imported' ? (
         <View
           style={[
@@ -85,6 +88,7 @@ export function PatternCard({ pattern, onPreview, onSave }: PatternCardProps) {
         </TouchableOpacity>
       </View>
     </Card>
+    </SlideUp>
   );
 }
 

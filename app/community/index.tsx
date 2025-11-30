@@ -1,80 +1,110 @@
-import { StyleSheet, Text, View } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useRouter } from 'expo-router';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { Card } from '@/components/Card';
+import { SlideUp } from '@/components/animations/SlideUp';
 import { Screen } from '@/components/Screen';
 import { useTheme } from '@/hooks/useTheme';
 
-const patterns = [
+// Mock Data for Community Feed
+const communityPosts = [
   {
-    id: 'cozygarden',
-    title: 'Cozy Garden Wrap',
-    difficulty: 'Intermediate',
-    tags: ['wrap', 'worsted', 'textured'],
+    id: 'post1',
+    user: 'AliceCrafts',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Alice',
+    projectTitle: 'Sunset Cardigan',
+    image: 'https://images.unsplash.com/photo-1619250907298-76e018cb932e?q=80&w=600&auto=format&fit=crop',
+    likes: 124,
+    patternName: 'Cozy Cardigan Pattern',
+    isPaid: true,
   },
   {
-    id: 'bubblepop',
-    title: 'Bubble Pop Bucket Hat',
-    difficulty: 'Easy',
-    tags: ['hat', 'bulky', 'retro'],
+    id: 'post2',
+    user: 'YarnMaster99',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=YarnMaster',
+    projectTitle: 'Dragon Scale Bag',
+    image: 'https://images.unsplash.com/photo-1584662889139-55364fb59d84?q=80&w=600&auto=format&fit=crop',
+    likes: 89,
+    patternName: 'Dragon Scale Stitch',
+    isPaid: false,
   },
   {
-    id: 'stellarplush',
-    title: 'Stellar Plush Star',
-    difficulty: 'Intermediate',
-    tags: ['plush', 'amigurumi'],
+    id: 'post3',
+    user: 'StitchWitch',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=StitchWitch',
+    projectTitle: 'Amigurumi Fox',
+    image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?q=80&w=600&auto=format&fit=crop',
+    likes: 256,
+    patternName: 'Fox Plushie',
+    isPaid: true,
   },
 ];
 
 export default function CommunityScreen() {
   const theme = useTheme();
+  const router = useRouter();
 
   return (
     <Screen>
-      <View>
-        <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Community</Text>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Discover inspiring patterns</Text>
-        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-          These cards will soon be powered by real feeds—complete with filters, tags, and one-tap
-          project creation.
-        </Text>
+      <View style={styles.header}>
+        <View>
+          <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Community</Text>
+          <Text style={[styles.title, { color: theme.colors.text }]}>Discover & Share</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/community/publish')}
+          style={[styles.publishButton, { backgroundColor: theme.colors.accent }]}
+        >
+          <FontAwesome name="plus" size={12} color="#000" style={{ marginRight: 6 }} />
+          <Text style={styles.publishButtonText}>Share</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.list}>
-        {patterns.map((pattern) => (
-          <Card key={pattern.id} style={styles.patternCard}>
-            <View
-              style={[
-                styles.thumbnail,
-                {
-                  backgroundColor: theme.colors.surfaceAlt,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            />
-            <View style={styles.patternMeta}>
-              <Text style={[styles.patternTitle, { color: theme.colors.text }]}>
-                {pattern.title}
-              </Text>
-              <Text style={[styles.patternDifficulty, { color: theme.colors.accent }]}>
-                {pattern.difficulty}
-              </Text>
-              <View style={styles.tagRow}>
-                {pattern.tags.map((tag) => (
-                  <View
-                    key={tag}
-                    style={[
-                      styles.tag,
-                      {
-                        backgroundColor: theme.colors.accentMuted,
-                        borderColor: theme.colors.accent,
-                      },
-                    ]}>
-                    <Text style={[styles.tagText, { color: theme.colors.accent }]}>{tag}</Text>
+      <View style={styles.feed}>
+        {communityPosts.map((post, index) => (
+          <SlideUp key={post.id} delay={index * 100}>
+            <View style={[styles.postCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              {/* User Header */}
+              <View style={styles.userHeader}>
+                <Image source={{ uri: post.avatar }} style={styles.avatar} />
+                <Text style={[styles.username, { color: theme.colors.text }]}>{post.user}</Text>
+                <TouchableOpacity style={styles.moreButton}>
+                  <FontAwesome name="ellipsis-h" size={16} color={theme.colors.muted} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Project Image */}
+              <View style={styles.imageContainer}>
+                <Image source={{ uri: post.image }} style={styles.projectImage} />
+                {post.isPaid && (
+                  <View style={[styles.badge, { backgroundColor: theme.colors.accent }]}>
+                    <Text style={styles.badgeText}>PAID PATTERN</Text>
                   </View>
-                ))}
+                )}
+              </View>
+
+              {/* Content */}
+              <View style={styles.content}>
+                <View style={styles.actions}>
+                  <TouchableOpacity style={styles.actionButton}>
+                    <FontAwesome name="heart-o" size={22} color={theme.colors.text} />
+                    <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>{post.likes}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton}>
+                    <FontAwesome name="comment-o" size={22} color={theme.colors.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton}>
+                    <FontAwesome name="bookmark-o" size={22} color={theme.colors.text} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.projectTitle, { color: theme.colors.text }]}>{post.projectTitle}</Text>
+                <Text style={[styles.patternLink, { color: theme.colors.accent }]}>
+                  Pattern: {post.patternName}
+                </Text>
               </View>
             </View>
-          </Card>
+          </SlideUp>
         ))}
       </View>
     </Screen>
@@ -82,67 +112,110 @@ export default function CommunityScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   eyebrow: {
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontSize: 12,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
-    marginBottom: 8,
   },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  list: {
-    marginTop: 20,
-  },
-  patternCard: {
+  publishButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  thumbnail: {
-    width: 72,
-    height: 72,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
+  },
+  publishButtonText: {
+    color: '#000',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  feed: {
+    gap: 24,
+    paddingBottom: 100,
+  },
+  postCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    backgroundColor: '#131726',
   },
-  patternMeta: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  patternTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  patternDifficulty: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tagRow: {
+  userHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-    marginTop: 6,
+    alignItems: 'center',
+    padding: 12,
   },
-  tag: {
-    borderRadius: 999,
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+    backgroundColor: '#ccc',
+  },
+  username: {
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  moreButton: {
+    padding: 8,
+  },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 1, // Square images for feed consistency
+    backgroundColor: '#333',
+    position: 'relative',
+  },
+  projectImage: {
+    width: '100%',
+    height: '100%',
+  },
+  badge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderWidth: 1,
-    marginHorizontal: 6,
-    marginBottom: 6,
+    borderRadius: 8,
   },
-  tagText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#000',
+  },
+  content: {
+    padding: 16,
+  },
+  actions: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  projectTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  patternLink: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
-
-
