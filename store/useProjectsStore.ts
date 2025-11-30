@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { resolveStateStorage } from '@/lib/storage';
+import { useYarnStore } from '@/store/useYarnStore';
 import { JournalEntry, Project, ProjectCounter, ProjectInput } from '@/types/project';
 import { ProjectYarn } from '@/types/yarn';
 
@@ -173,33 +174,45 @@ export const useProjectsStore = create<ProjectsState>()(
         }));
       },
       updateProjectStatus: (id, status) => {
-        set((state) => ({
-          projects: state.projects.map((project) => {
-            if (project.id !== id) return project;
-            
-            const updated = {
-              ...project,
-              status,
-              updatedAt: now(),
-            };
-            
-            // Auto-add journal entry when finished
-            if (status === 'finished' && project.status !== 'finished') {
-              updated.journal = [
-                ...project.journal,
-                {
-                  id: generateId('journal'),
-                  projectId: id,
-                  type: 'finished',
-                  text: `Finished on ${new Date().toLocaleDateString()}`,
-                  createdAt: now(),
-                },
-              ];
-            }
-            
-            return updated;
-          }),
-        }));
+        set((state) => {
+          const project = state.projects.find(p => p.id === id);
+          
+          // Handle yarn consumption when finishing a project
+          if (status === 'finished' && project?.status !== 'finished') {
+            project?.linkedYarns.forEach(link => {
+              // Consume the yarn from stash (reduces owned and reserved)
+              useYarnStore.getState().consumeYarn(link.yarnId, link.skeinsUsed);
+            });
+          }
+
+          return {
+            projects: state.projects.map((project) => {
+              if (project.id !== id) return project;
+              
+              const updated = {
+                ...project,
+                status,
+                updatedAt: now(),
+              };
+              
+              // Auto-add journal entry when finished
+              if (status === 'finished' && project.status !== 'finished') {
+                updated.journal = [
+                  ...project.journal,
+                  {
+                    id: generateId('journal'),
+                    projectId: id,
+                    type: 'finished',
+                    text: `Finished on ${new Date().toLocaleDateString()}`,
+                    createdAt: now(),
+                  },
+                ];
+              }
+              
+              return updated;
+            }),
+          };
+        });
       },
       setActiveProject: (id) => {
         const projectExists = get().projects.some((project) => project.id === id);
@@ -570,6 +583,9 @@ export const useProjectsStore = create<ProjectsState>()(
           metersUsed: payload.metersUsed,
           addedAt: now(),
         };
+
+        // Reserve the yarn in stash
+        useYarnStore.getState().reserveYarn(payload.yarnId, newLink.skeinsUsed);
         
         set((state) => ({
           projects: state.projects.map((project) =>
@@ -589,14 +605,24 @@ export const useProjectsStore = create<ProjectsState>()(
         set((state) => ({
           projects: state.projects.map((project) => {
             if (project.id !== projectId) return project;
-            const updatedLinks = project.linkedYarns.map((link) =>
-              link.id === linkId
-                ? {
-                    ...link,
-                    ...data,
+            const updatedLinks = project.linkedYarns.map((link) => {
+              if (link.id === linkId) {
+                // If quantity changed, adjust reservation
+                if (data.skeinsUsed !== undefined && data.skeinsUsed !== link.skeinsUsed) {
+                  const diff = data.skeinsUsed - link.skeinsUsed;
+                  if (diff > 0) {
+                    useYarnStore.getState().reserveYarn(link.yarnId, diff);
+                  } else {
+                    useYarnStore.getState().releaseYarn(link.yarnId, Math.abs(diff));
                   }
-                : link,
-            );
+                }
+                return {
+                  ...link,
+                  ...data,
+                };
+              }
+              return link;
+            });
             return {
               ...project,
               linkedYarns: updatedLinks,
@@ -611,6 +637,13 @@ export const useProjectsStore = create<ProjectsState>()(
         set((state) => ({
           projects: state.projects.map((project) => {
             if (project.id !== projectId) return project;
+            
+            // Find the link to release reservation
+            const linkToRemove = project.linkedYarns.find(l => l.id === linkId);
+            if (linkToRemove) {
+              useYarnStore.getState().releaseYarn(linkToRemove.yarnId, linkToRemove.skeinsUsed);
+            }
+
             const remainingLinks = project.linkedYarns.filter((link) => link.id !== linkId);
             return {
               ...project,

@@ -11,6 +11,7 @@ type YarnState = {
   deleteYarn: (id: string) => void;
   reserveYarn: (id: string, skeins: number) => void;
   releaseYarn: (id: string, skeins: number) => void;
+  consumeYarn: (id: string, skeins: number) => void;
   getYarnById: (id: string) => Yarn | undefined;
 };
 
@@ -105,6 +106,23 @@ export const useYarnStore = create<YarnState>()(
             yarn.id === id
               ? {
                   ...yarn,
+                  skeinsReserved: Math.max(0, yarn.skeinsReserved - skeins),
+                  updatedAt: now(),
+                }
+              : yarn,
+          ),
+        }));
+      },
+
+      consumeYarn: (id, skeins) => {
+        set((state) => ({
+          yarns: state.yarns.map((yarn) =>
+            yarn.id === id
+              ? {
+                  ...yarn,
+                  // Reduce owned amount
+                  skeinsOwned: Math.max(0, yarn.skeinsOwned - skeins),
+                  // Also reduce reserved amount since it's now used
                   skeinsReserved: Math.max(0, yarn.skeinsReserved - skeins),
                   updatedAt: now(),
                 }
