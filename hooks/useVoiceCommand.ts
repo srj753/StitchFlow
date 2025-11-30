@@ -1,8 +1,22 @@
 import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Voice, { SpeechErrorEvent, SpeechResultsEvent } from '@react-native-voice/voice';
 
 import { findCounterByName, parseVoiceCommand, ParsedCommand } from '@/lib/voiceCommands';
+
+// Dynamically import Voice to handle Expo Go compatibility
+let Voice: any = null;
+let SpeechErrorEvent: any = null;
+let SpeechResultsEvent: any = null;
+
+try {
+  const voiceModule = require('@react-native-voice/voice');
+  Voice = voiceModule.default || voiceModule;
+  SpeechErrorEvent = voiceModule.SpeechErrorEvent;
+  SpeechResultsEvent = voiceModule.SpeechResultsEvent;
+} catch (e) {
+  // Module not available (Expo Go limitation)
+  console.warn('Voice recognition not available in Expo Go. Requires development build.');
+}
 
 export type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking' | 'error';
 
@@ -20,11 +34,18 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
 
   // Check if voice recognition is supported
   useEffect(() => {
-    Voice.isAvailable().then((available) => {
-      setIsSupported(available);
-    }).catch(() => {
+    if (!Voice) {
       setIsSupported(false);
-    });
+      return;
+    }
+
+    Voice.isAvailable()
+      .then((available: boolean) => {
+        setIsSupported(available);
+      })
+      .catch(() => {
+        setIsSupported(false);
+      });
 
     // Set up event listeners
     Voice.onSpeechStart = () => {
@@ -36,7 +57,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
       setStatus('processing');
     };
 
-    Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+    Voice.onSpeechResults = (e: any) => {
       if (e.value && e.value.length > 0) {
         const text = e.value[0];
         const parsed = parseVoiceCommand(text);
@@ -52,7 +73,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
       }
     };
 
-    Voice.onSpeechError = (e: SpeechErrorEvent) => {
+    Voice.onSpeechError = (e: any) => {
       console.error('Speech recognition error:', e.error);
       setError(e.error?.message || 'Speech recognition failed');
       setStatus('error');
@@ -64,7 +85,9 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
     };
 
     return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
+      if (Voice) {
+        Voice.destroy().then(() => Voice.removeAllListeners?.()).catch(() => {});
+      }
       if (recognitionTimeoutRef.current) {
         clearTimeout(recognitionTimeoutRef.current);
       }
@@ -72,8 +95,8 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
   }, [onCommand]);
 
   const startListening = useCallback(async () => {
-    if (!enabled || !isSupported) {
-      setError('Voice recognition not available');
+    if (!enabled || !isSupported || !Voice) {
+      setError('Voice recognition not available. Requires development build.');
       return;
     }
 
@@ -84,7 +107,9 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
       // Auto-stop after 5 seconds of listening
       recognitionTimeoutRef.current = setTimeout(async () => {
         try {
-          await Voice.stop();
+          if (Voice) {
+            await Voice.stop();
+          }
         } catch (e) {
           // Ignore stop errors
         }
@@ -97,6 +122,8 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
   }, [enabled, isSupported]);
 
   const stopListening = useCallback(async () => {
+    if (!Voice) return;
+    
     try {
       if (recognitionTimeoutRef.current) {
         clearTimeout(recognitionTimeoutRef.current);
@@ -138,7 +165,9 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
     speak,
     message: isSupported
       ? 'Tap and speak your command'
-      : 'Voice recognition not available on this device',
+      : Voice
+        ? 'Voice recognition not available on this device'
+        : 'Voice commands require a development build (not available in Expo Go)',
   };
 }
 
