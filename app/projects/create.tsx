@@ -1,20 +1,19 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { ProjectForm, ProjectFormPrefill } from '@/components/projects/ProjectForm';
+import { patternCatalog } from '@/data/patterns/catalog';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
-import { useProjectsStore } from '@/store/useProjectsStore';
-import { ProjectInput } from '@/types/project';
-import { patternCatalog } from '@/data/patterns/catalog';
-import { Pattern } from '@/types/pattern';
 import { patternDraftToProjectPrefill } from '@/lib/patternDraft';
 import { usePatternDraftStore } from '@/store/usePatternDraftStore';
 import { usePatternStore } from '@/store/usePatternStore';
+import { useProjectsStore } from '@/store/useProjectsStore';
+import { Pattern } from '@/types/pattern';
+import { ProjectInput } from '@/types/project';
 
 export default function CreateProjectScreen() {
   const theme = useTheme();
@@ -65,6 +64,11 @@ export default function CreateProjectScreen() {
   const handleSubmit = (input: ProjectInput) => {
     const created = addProject(input);
     showSuccess(`Project "${created.name}" created!`);
+    
+    // If a preset was selected, apply it to the new project
+    // Note: This would require passing preset info through the form
+    // For now, users can apply presets in the project detail view
+    
     setTimeout(() => {
       router.replace({
         pathname: '/projects/[id]',

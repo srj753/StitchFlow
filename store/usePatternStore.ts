@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { resolveStateStorage } from '@/lib/storage';
-import { Pattern, PatternInput } from '@/types/pattern';
+import { Pattern, PatternInput, PatternModification, PatternVersion, RowAnnotation } from '@/types/pattern';
 
 type PatternState = {
   patterns: Pattern[];
@@ -10,12 +10,23 @@ type PatternState = {
   deletePattern: (id: string) => void;
   toggleRowChecklist: (patternId: string, rowId: string) => void;
   clearRowChecklist: (patternId: string) => void;
+  // Phase 2.3: Annotations
+  addRowAnnotation: (patternId: string, rowId: string, annotation: Omit<RowAnnotation, 'rowId' | 'createdAt' | 'modifiedAt'>) => void;
+  updateRowAnnotation: (patternId: string, rowId: string, updates: Partial<RowAnnotation>) => void;
+  removeRowAnnotation: (patternId: string, rowId: string) => void;
+  // Phase 2.3: Modifications tracking
+  trackModification: (patternId: string, modification: Omit<PatternModification, 'id' | 'timestamp'>) => void;
+  createVersion: (patternId: string) => void;
+  getVersion: (patternId: string, version: number) => PatternVersion | undefined;
+  restoreVersion: (patternId: string, version: number) => void;
+  // Phase 2.3: Pattern updates
+  updatePattern: (patternId: string, updates: Partial<Pattern>) => void;
 };
 
 const now = () => new Date().toISOString();
 
-const generateId = () =>
-  `pattern_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+const generateId = (prefix = 'pattern') =>
+  `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 
 const createPattern = (input: PatternInput): Pattern => ({
   id: generateId(),
@@ -88,6 +99,151 @@ export const usePatternStore = create<PatternState>()(
             return {
               ...pattern,
               rowChecklist: [],
+            };
+          }),
+        }));
+      },
+      // Phase 2.3: Annotations
+      addRowAnnotation: (patternId, rowId, annotation) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            
+            const annotations = pattern.rowAnnotations || {};
+            const newAnnotation: RowAnnotation = {
+              rowId,
+              ...annotation,
+              createdAt: now(),
+            };
+            
+            return {
+              ...pattern,
+              rowAnnotations: {
+                ...annotations,
+                [rowId]: newAnnotation,
+              },
+            };
+          }),
+        }));
+      },
+      updateRowAnnotation: (patternId, rowId, updates) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            
+            const annotations = pattern.rowAnnotations || {};
+            const existing = annotations[rowId];
+            if (!existing) return pattern;
+            
+            return {
+              ...pattern,
+              rowAnnotations: {
+                ...annotations,
+                [rowId]: {
+                  ...existing,
+                  ...updates,
+                  modifiedAt: now(),
+                },
+              },
+            };
+          }),
+        }));
+      },
+      removeRowAnnotation: (patternId, rowId) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            
+            const annotations = pattern.rowAnnotations || {};
+            const { [rowId]: removed, ...rest } = annotations;
+            
+            return {
+              ...pattern,
+              rowAnnotations: rest,
+            };
+          }),
+        }));
+      },
+      // Phase 2.3: Modifications tracking
+      trackModification: (patternId, modification) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            
+            const modifications = pattern.modifications || [];
+            const newModification: PatternModification = {
+              ...modification,
+              id: generateId('mod'),
+              timestamp: now(),
+            };
+            
+            return {
+              ...pattern,
+              modifications: [...modifications, newModification],
+            };
+          }),
+        }));
+      },
+      createVersion: (patternId) => {
+        set((state) => {
+          const pattern = state.patterns.find((p) => p.id === patternId);
+          if (!pattern) return state;
+          
+          const currentVersion = (pattern.currentVersion || 0) + 1;
+          const newVersion: PatternVersion = {
+            id: generateId('ver'),
+            version: currentVersion,
+            timestamp: now(),
+            changes: pattern.modifications || [],
+            snippet: pattern.snippet,
+            annotations: pattern.rowAnnotations,
+          };
+          
+          return {
+            patterns: state.patterns.map((p) => {
+              if (p.id !== patternId) return p;
+              return {
+                ...p,
+                currentVersion,
+                versions: [...(p.versions || []), newVersion],
+                modifications: [], // Clear modifications after versioning
+              };
+            }),
+          };
+        });
+      },
+      getVersion: (patternId, version) => {
+        const state = usePatternStore.getState();
+        const pattern = state.patterns.find((p) => p.id === patternId);
+        return pattern?.versions?.find((v) => v.version === version);
+      },
+      restoreVersion: (patternId, version) => {
+        set((state) => {
+          const pattern = state.patterns.find((p) => p.id === patternId);
+          const versionToRestore = pattern?.versions?.find((v) => v.version === version);
+          if (!versionToRestore) return state;
+          
+          return {
+            patterns: state.patterns.map((p) => {
+              if (p.id !== patternId) return p;
+              return {
+                ...p,
+                snippet: versionToRestore.snippet,
+                rowAnnotations: versionToRestore.annotations,
+                modifications: [],
+              };
+            }),
+          };
+        });
+      },
+      // Phase 2.3: Pattern updates
+      updatePattern: (patternId, updates) => {
+        set((state) => ({
+          patterns: state.patterns.map((pattern) => {
+            if (pattern.id !== patternId) return pattern;
+            return {
+              ...pattern,
+              ...updates,
             };
           }),
         }));

@@ -1,16 +1,16 @@
-import { useRouter } from 'expo-router';
-import { useState, useMemo } from 'react';
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import {
+    FlatList,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
-import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -311,10 +311,14 @@ function EstimatorField({
 const weightOptions: Array<{ label: string; value: YarnWeightCategory | 'all' }> = [
   { label: 'All', value: 'all' },
   { label: 'Lace', value: 'Lace' },
+  { label: 'Fingering', value: 'Fingering' },
   { label: 'Sport', value: 'Sport' },
   { label: 'DK', value: 'DK' },
   { label: 'Worsted', value: 'Worsted' },
+  { label: 'Aran', value: 'Aran' },
   { label: 'Bulky', value: 'Bulky' },
+  { label: 'Super Bulky', value: 'Super Bulky' },
+  { label: 'Jumbo', value: 'Jumbo' },
 ];
 const weightFactorMap: Record<YarnWeightCategory | 'all', number> = {
   all: 1,

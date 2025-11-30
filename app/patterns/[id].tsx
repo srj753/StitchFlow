@@ -1,13 +1,13 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
-import { useTheme } from '@/hooks/useTheme';
 import { patternCatalog } from '@/data/patterns/catalog';
+import { useTheme } from '@/hooks/useTheme';
 import { parsePatternText } from '@/lib/patternParser';
 import { usePatternStore } from '@/store/usePatternStore';
 

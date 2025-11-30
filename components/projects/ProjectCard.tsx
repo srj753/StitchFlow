@@ -2,11 +2,11 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useMemo } from 'react';
 import {
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 import { SlideUp } from '@/components/animations/SlideUp';

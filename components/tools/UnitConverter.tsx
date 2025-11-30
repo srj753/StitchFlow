@@ -1,6 +1,6 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Card } from '@/components/Card';
 import { useTheme } from '@/hooks/useTheme';

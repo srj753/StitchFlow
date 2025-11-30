@@ -2,6 +2,34 @@ import type { Project } from './project';
 
 export type PatternDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
+export type RowAnnotation = {
+  rowId: string;
+  note?: string;
+  highlightColor?: string;
+  isCrossedOut?: boolean;
+  createdAt: string;
+  modifiedAt?: string;
+};
+
+export type PatternModification = {
+  id: string;
+  type: 'text_change' | 'note_added' | 'note_modified' | 'annotation_added' | 'annotation_removed';
+  description: string;
+  timestamp: string;
+  rowId?: string;
+  oldValue?: string;
+  newValue?: string;
+};
+
+export type PatternVersion = {
+  id: string;
+  version: number;
+  timestamp: string;
+  changes: PatternModification[];
+  snippet?: string;
+  annotations?: Record<string, RowAnnotation>;
+};
+
 export type Pattern = {
   id: string;
   name: string;
@@ -26,6 +54,11 @@ export type Pattern = {
   sourceType?: 'catalog' | 'imported' | 'draft';
   importedAt?: string;
   rowChecklist?: string[]; // Array of completed row IDs
+  // Phase 2.3: Annotations and version history
+  rowAnnotations?: Record<string, RowAnnotation>; // Map of rowId -> annotation
+  modifications?: PatternModification[]; // History of changes
+  versions?: PatternVersion[]; // Version snapshots
+  currentVersion?: number; // Current version number
 };
 
 export type PatternInput = {

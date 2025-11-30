@@ -3,13 +3,19 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { resolveStateStorage } from '@/lib/storage';
 
+import { AiProvider } from '@/lib/aiService';
+
 type SettingsState = {
   keepScreenAwake: boolean;
   voiceHintsEnabled: boolean;
-  aiAssistantEnabled: boolean; // New setting
+  aiAssistantEnabled: boolean;
+  openaiApiKey?: string;
+  aiProvider: AiProvider;
   setKeepScreenAwake: (value: boolean) => void;
   toggleVoiceHints: () => void;
   toggleAiAssistant: () => void;
+  setOpenaiApiKey: (key: string) => void;
+  setAiProvider: (provider: AiProvider) => void;
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -17,10 +23,14 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       keepScreenAwake: false,
       voiceHintsEnabled: false,
-      aiAssistantEnabled: true, // Default to true (or false if preferred)
+      aiAssistantEnabled: true,
+      openaiApiKey: undefined,
+      aiProvider: 'groq', // Default
       setKeepScreenAwake: (value) => set({ keepScreenAwake: value }),
       toggleVoiceHints: () => set({ voiceHintsEnabled: !get().voiceHintsEnabled }),
       toggleAiAssistant: () => set({ aiAssistantEnabled: !get().aiAssistantEnabled }),
+      setOpenaiApiKey: (key) => set({ openaiApiKey: key }),
+      setAiProvider: (provider) => set({ aiProvider: provider }),
     }),
     {
       name: 'knotiq-settings',

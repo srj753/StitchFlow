@@ -2,15 +2,16 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Modal, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { ColorPickerModal } from '@/components/color/ColorPickerModal';
 import { Screen } from '@/components/Screen';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { UnitConverter } from '@/components/tools/UnitConverter';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { exportAllData, importData } from '@/lib/dataExport';
+import { exportPresets, importPresets } from '@/lib/presetExport';
 import { ThemeMode, useAppearanceStore } from '@/store/useAppearanceStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
@@ -18,13 +19,37 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { showSuccess, showError } = useToast();
   const { mode, setMode, cycleMode, customAccentColor, setCustomAccentColor } = useAppearanceStore();
-  const { keepScreenAwake, setKeepScreenAwake, voiceHintsEnabled, toggleVoiceHints, aiAssistantEnabled, toggleAiAssistant } =
-    useSettingsStore();
+  const { 
+    keepScreenAwake, setKeepScreenAwake, 
+    voiceHintsEnabled, toggleVoiceHints, 
+    aiAssistantEnabled, toggleAiAssistant, 
+    openaiApiKey, setOpenaiApiKey,
+    aiProvider, setAiProvider
+  } = useSettingsStore();
   const router = useRouter();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showConverter, setShowConverter] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExportingPresets, setIsExportingPresets] = useState(false);
+  const [isImportingPresets, setIsImportingPresets] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(openaiApiKey || '');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+
+  const handleSaveApiKey = () => {
+    // Simple validation, allow sk- (OpenAI) or xai- (Grok) or just non-empty
+    if (apiKeyInput.trim().length > 5) {
+      setOpenaiApiKey(apiKeyInput.trim());
+      showSuccess('API Key saved');
+      setShowApiKeyInput(false);
+    } else if (apiKeyInput.trim() === '') {
+      setOpenaiApiKey('');
+      showSuccess('API Key removed');
+      setShowApiKeyInput(false);
+    } else {
+      showError('Invalid API Key format');
+    }
+  };
 
   const handleExport = async () => {
     try {
@@ -79,6 +104,41 @@ export default function SettingsScreen() {
     } catch (error) {
       showError('Failed to open file picker');
       setIsImporting(false);
+    }
+  };
+
+  const handleExportPresets = async () => {
+    try {
+      setIsExportingPresets(true);
+      const success = await exportPresets();
+      if (success) {
+        showSuccess('Presets exported successfully');
+      } else {
+        showError('Failed to export presets');
+      }
+    } catch (error) {
+      showError('Failed to export presets');
+    } finally {
+      setIsExportingPresets(false);
+    }
+  };
+
+  const handleImportPresets = async () => {
+    try {
+      setIsImportingPresets(true);
+      const result = await importPresets();
+      if (result.imported > 0) {
+        showSuccess(`Imported ${result.imported} preset(s)`);
+        if (result.errors.length > 0) {
+          showError(`Some presets failed: ${result.errors.join(', ')}`);
+        }
+      } else {
+        showError(result.errors[0] || 'No presets imported');
+      }
+    } catch (error) {
+      showError('Failed to import presets');
+    } finally {
+      setIsImportingPresets(false);
     }
   };
 
@@ -188,6 +248,108 @@ export default function SettingsScreen() {
                     trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
                 />
             </View>
+
+            {aiAssistantEnabled && (
+              <>
+                <View style={styles.divider} />
+                
+                {/* AI Provider Selection */}
+                <View style={styles.row}>
+                    <View style={styles.iconLabelRow}>
+                        <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                            <FontAwesome name="server" size={14} color={theme.colors.text} />
+                        </View>
+                        <View>
+                            <Text style={[styles.rowLabel, { color: theme.colors.text }]}>AI Provider</Text>
+                        </View>
+                    </View>
+                    <View style={styles.themeToggleRow}>
+                        <TouchableOpacity
+                            onPress={() => setAiProvider('openai')}
+                            style={[
+                                styles.themePill,
+                                { backgroundColor: aiProvider === 'openai' ? theme.colors.accent : theme.colors.surfaceAlt }
+                            ]}
+                        >
+                            <Text style={{ 
+                                color: aiProvider === 'openai' ? '#000' : theme.colors.textSecondary, 
+                                fontWeight: aiProvider === 'openai' ? '700' : '400',
+                                fontSize: 12
+                            }}>
+                                OpenAI
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setAiProvider('groq')}
+                            style={[
+                                styles.themePill,
+                                { backgroundColor: aiProvider === 'groq' ? theme.colors.accent : theme.colors.surfaceAlt }
+                            ]}
+                        >
+                            <Text style={{ 
+                                color: aiProvider === 'groq' ? '#000' : theme.colors.textSecondary, 
+                                fontWeight: aiProvider === 'groq' ? '700' : '400',
+                                fontSize: 12
+                            }}>
+                                Groq
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.divider} />
+                
+                <View style={styles.apiKeyContainer}>
+                  <TouchableOpacity 
+                    onPress={() => setShowApiKeyInput(!showApiKeyInput)}
+                    style={styles.row}
+                  >
+                    <View style={styles.iconLabelRow}>
+                      <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="key" size={16} color={theme.colors.text} />
+                      </View>
+                      <View>
+                        <Text style={[styles.rowLabel, { color: theme.colors.text }]}>
+                            {aiProvider === 'groq' ? 'Groq API Key' : 'OpenAI API Key'}
+                        </Text>
+                        <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
+                          {openaiApiKey ? 'Key saved • Tap to edit' : 'Required for smart features'}
+                        </Text>
+                      </View>
+                    </View>
+                    <FontAwesome 
+                      name={showApiKeyInput ? "chevron-up" : "chevron-down"} 
+                      size={14} 
+                      color={theme.colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                  
+                  {showApiKeyInput && (
+                    <View style={styles.apiKeyInputContainer}>
+                      <TextInput
+                        value={apiKeyInput}
+                        onChangeText={setApiKeyInput}
+                        placeholder={aiProvider === 'groq' ? "gsk_..." : "sk-..."}
+                        placeholderTextColor={theme.colors.muted}
+                        style={[styles.apiKeyInput, { 
+                          color: theme.colors.text,
+                          backgroundColor: theme.colors.surfaceAlt,
+                          borderColor: theme.colors.border
+                        }]}
+                        secureTextEntry
+                        autoCapitalize="none"
+                      />
+                      <TouchableOpacity 
+                        onPress={handleSaveApiKey}
+                        style={[styles.saveKeyButton, { backgroundColor: theme.colors.accent }]}
+                      >
+                        <Text style={{ color: '#000', fontWeight: '700', fontSize: 12 }}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
             
             <View style={styles.divider} />
             
@@ -243,6 +405,47 @@ export default function SettingsScreen() {
                     <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Import Backup</Text>
                 </View>
                 {isImporting ? (
+                    <LoadingSpinner size="small" />
+                ) : (
+                    <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+                )}
+            </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>COUNTER PRESETS</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+            <TouchableOpacity 
+                onPress={handleExportPresets} 
+                disabled={isExportingPresets}
+                style={[styles.row, isExportingPresets && { opacity: 0.6 }]}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="download" size={16} color={theme.colors.text} />
+                    </View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Export Presets</Text>
+                </View>
+                {isExportingPresets ? (
+                    <LoadingSpinner size="small" />
+                ) : (
+                    <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+                )}
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity 
+                onPress={handleImportPresets} 
+                disabled={isImportingPresets}
+                style={[styles.row, isImportingPresets && { opacity: 0.6 }]}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="upload" size={16} color={theme.colors.text} />
+                    </View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Import Presets</Text>
+                </View>
+                {isImportingPresets ? (
                     <LoadingSpinner size="small" />
                 ) : (
                     <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
@@ -411,5 +614,27 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
+  },
+  apiKeyContainer: {
+    flexDirection: 'column',
+  },
+  apiKeyInputContainer: {
+    padding: 16,
+    paddingTop: 0,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  apiKeyInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+  },
+  saveKeyButton: {
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
   },
 });

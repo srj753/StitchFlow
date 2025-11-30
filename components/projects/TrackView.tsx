@@ -4,15 +4,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 import { Counter } from '@/components/counters/Counter';
@@ -482,6 +482,9 @@ export function TrackView({ project }: TrackViewProps) {
                   targetValue: counterConfig.targetValue,
                 });
               });
+              // Record preset usage for analytics
+              const recordUsage = useCounterPresetsStore.getState().recordUsage;
+              recordUsage(preset.id, project.patternName || undefined);
               showSuccess(`${preset.name} preset applied`);
             }}
           />
@@ -1244,7 +1247,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
     padding: 24,
+    width: '85%',
+    maxWidth: 400,
   },
   modalCard: {
     width: '100%',

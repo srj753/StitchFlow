@@ -3,9 +3,9 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { AdvancedFilters, AdvancedFilterOptions } from '@/components/filters/AdvancedFilters';
-import { Screen } from '@/components/Screen';
+import { AdvancedFilterOptions, AdvancedFilters } from '@/components/filters/AdvancedFilters';
 import { ProjectCard } from '@/components/projects/ProjectCard';
+import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTheme } from '@/hooks/useTheme';

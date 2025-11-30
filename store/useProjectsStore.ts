@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { Project, ProjectInput, ProjectCounter, JournalEntry } from '@/types/project';
-import { ProjectYarn } from '@/types/yarn';
 import { resolveStateStorage } from '@/lib/storage';
+import { JournalEntry, Project, ProjectCounter, ProjectInput } from '@/types/project';
+import { ProjectYarn } from '@/types/yarn';
 
 type ProjectsState = {
   projects: Project[];

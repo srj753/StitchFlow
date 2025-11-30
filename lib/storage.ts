@@ -1,5 +1,5 @@
-import type { StateStorage } from 'zustand/middleware';
 import { Platform } from 'react-native';
+import type { StateStorage } from 'zustand/middleware';
 
 const createWebStorage = (): StateStorage => {
   return {

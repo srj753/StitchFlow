@@ -311,6 +311,15 @@ type PatternDraft = {
 - Active project recap
 - Recently added projects list
 
+✅ **AI Assistant (New)**
+- **Provider Support**: OpenAI and Groq (for fast/cheap inference)
+- **Vision Capabilities**: Extract patterns from photos/screenshots
+- **Smart Import**:
+  - **PDF**: Intelligent text extraction
+  - **Web**: URL scraping and content cleaning
+  - **Images**: Vision-based pattern recognition
+- **Configurable**: User API keys stored securely in Settings
+
 ✅ **Settings**
 - Theme mode selector (system/light/dark)
 - Custom accent color picker
@@ -628,11 +637,15 @@ const styles = StyleSheet.create({
 - **UI Pattern**: Interactive checklist in Pattern Detail screen with checkboxes and strikethrough
 - **Persistence**: Checklist state persists across app restarts
 
-#### Loading States & Toast System
-- **Components**: `LoadingSpinner` and `Toast` components in `components/ui/`
-- **Hook**: `useToast()` provides `showSuccess()`, `showError()`, `showInfo()`
-- **Pattern**: All async operations (photo picker, document picker, data export/import) show loading states
-- **UX**: Buttons disabled during operations, overlay spinners for long operations
+#### AI Service & Pattern Extraction
+- **Service**: `lib/aiService.ts` manages LLM interactions (OpenAI/Groq)
+- **Architecture**: Unified interface for multiple providers and fallbacks
+- **Capabilities**: Text analysis, Vision (image-to-pattern), PDF parsing
+- **Extraction Pipeline**:
+  1. **Input**: URL, PDF, or Image
+  2. **Processing**: Scraper/OCR/Vision API extracts raw content
+  3. **Analysis**: LLM structures data into standard Pattern schema
+  4. **Output**: Pre-filled Pattern form
 
 ### Storage Architecture Updates
 

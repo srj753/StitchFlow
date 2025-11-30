@@ -1,12 +1,13 @@
 
-import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { useTheme } from '@/hooks/useTheme';
-import { Project, ProjectInput } from '@/types/project';
 import { ColorPickerModal } from '@/components/color/ColorPickerModal';
+import { useTheme } from '@/hooks/useTheme';
 import { ensureContrastingText } from '@/lib/color';
+import { useCounterPresetsStore } from '@/store/useCounterPresetsStore';
+import { Project, ProjectInput } from '@/types/project';
 
 export type ProjectFormPrefill = {
   name?: string;
@@ -72,6 +73,15 @@ export function ProjectForm({
   ]);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
+  const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const [selectedPresetForProject, setSelectedPresetForProject] = useState<string | null>(null);
+  
+  // Get suggested presets based on pattern name
+  const suggestedPresets = useMemo(() => {
+    if (!patternName.trim()) return [];
+    const store = useCounterPresetsStore.getState();
+    return store.getSuggestedPresets(undefined, patternName).slice(0, 3);
+  }, [patternName]);
 
   useEffect(() => {
     if (!prefill) return;
@@ -188,6 +198,46 @@ export function ProjectForm({
           themeColor={theme.colors}
           placeholder="Pattern name or designer"
         />
+        
+        {/* Smart Preset Suggestions */}
+        {suggestedPresets.length > 0 && (
+          <View style={[styles.presetSuggestions, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+            <Text style={[styles.suggestionsLabel, { color: theme.colors.textSecondary }]}>
+              Suggested Counter Presets
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll}>
+              {suggestedPresets.map((preset) => (
+                <TouchableOpacity
+                  key={preset.id}
+                  onPress={() => setSelectedPresetForProject(preset.id)}
+                  style={[
+                    styles.suggestionChip,
+                    {
+                      backgroundColor: selectedPresetForProject === preset.id ? theme.colors.accent : theme.colors.surface,
+                      borderColor: selectedPresetForProject === preset.id ? theme.colors.accent : theme.colors.border,
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color: selectedPresetForProject === preset.id ? '#000' : theme.colors.text,
+                      fontWeight: selectedPresetForProject === preset.id ? '700' : '500',
+                      fontSize: 12,
+                    }}>
+                    {preset.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                onPress={() => setShowPresetPicker(true)}
+                style={[styles.suggestionChip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <FontAwesome name="plus" size={10} color={theme.colors.accent} style={{ marginRight: 4 }} />
+                <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 12 }}>
+                  More
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        )}
         
         <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>PATTERN SOURCE</Text>
         <View style={[styles.segmentedControl, { backgroundColor: theme.colors.surfaceAlt }]}>
@@ -650,5 +700,32 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  presetSuggestions: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  suggestionsLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  suggestionsScroll: {
+    marginHorizontal: -4,
+  },
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginRight: 8,
+    marginLeft: 4,
   },
 });

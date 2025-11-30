@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { WeeklyActivityChart } from '@/components/analytics/ProgressCharts';
+import { ProjectStatsView } from '@/components/analytics/ProjectStats';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { useTheme } from '@/hooks/useTheme';
+import { calculateProjectStats, calculateWeeklyActivity } from '@/lib/analytics';
 import { usePatternStore } from '@/store/usePatternStore';
 import { useProjectsStore } from '@/store/useProjectsStore';
 import { useYarnStore } from '@/store/useYarnStore';
@@ -14,48 +17,39 @@ export default function ProfileScreen() {
   const yarns = useYarnStore((state) => state.yarns);
   const patterns = usePatternStore((state) => state.patterns);
 
-  const stats = useMemo(() => {
-    const active = projects.filter((project) => project.status === 'active').length;
-    const finished = projects.filter((project) => project.status === 'finished').length;
-    return {
-      totalProjects: projects.length,
-      activeProjects: active,
-      finishedProjects: finished,
-      stashCount: yarns.length,
-      importedPatterns: patterns.length,
-    };
-  }, [patterns.length, projects, yarns.length]);
+  const projectStats = useMemo(() => calculateProjectStats(projects), [projects]);
+  const weeklyActivity = useMemo(() => calculateWeeklyActivity(projects), [projects]);
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Profile</Text>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Your maker stats</Text>
-        <Text style={[styles.body, { color: theme.colors.textSecondary }]}>
-          Quick snapshot of everything you’ve logged so far. Future versions will sync across
-          devices and add streaks, badges, and community sharing.
-        </Text>
-      </View>
+    <Screen scrollable={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Profile</Text>
+          <Text style={[styles.title, { color: theme.colors.text }]}>Your maker stats</Text>
+          <Text style={[styles.body, { color: theme.colors.textSecondary }]}>
+            Track your progress, streaks, and habits.
+          </Text>
+        </View>
 
-      <Card title="Projects">
-        <Stat label="Total" value={stats.totalProjects} />
-        <Stat label="Active" value={stats.activeProjects} />
-        <Stat label="Finished" value={stats.finishedProjects} />
-      </Card>
+        <ProjectStatsView stats={projectStats} />
+        
+        <WeeklyActivityChart data={weeklyActivity} />
 
-      <Card title="Library">
-        <Stat label="Imported patterns" value={stats.importedPatterns} />
-        <Stat label="Yarn stash entries" value={stats.stashCount} />
-      </Card>
+        <Card title="Library Stats">
+          <Stat label="Total Projects" value={projectStats.total} />
+          <Stat label="Imported Patterns" value={patterns.length} />
+          <Stat label="Stash Entries" value={yarns.length} />
+        </Card>
 
-      <Card title="Coming soon">
-        <Text style={{ color: theme.colors.textSecondary, marginBottom: 8 }}>
-          We’re planning:
-        </Text>
-        <Bullet text="Cross-device sync & backups" />
-        <Bullet text="Shareable project pages" />
-        <Bullet text="Community challenges and testers" />
-      </Card>
+        <Card title="Coming soon">
+          <Text style={{ color: theme.colors.textSecondary, marginBottom: 8 }}>
+            We’re planning:
+          </Text>
+          <Bullet text="Cross-device sync & backups" />
+          <Bullet text="Shareable project pages" />
+          <Bullet text="Community challenges and testers" />
+        </Card>
+      </ScrollView>
     </Screen>
   );
 }
