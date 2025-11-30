@@ -77,6 +77,8 @@ export type Project = {
   // New features
   journal: JournalEntry[];
   photos: string[]; // Array of photo URIs
+  thumbnail?: string; // Explicit thumbnail field
+  timeSpentMinutes: number; // Track time spent on project
   yarnIds: string[]; // Deprecated - kept for backwards compat
   linkedYarns: ProjectYarn[]; // Details about linked yarn quantities
   
@@ -112,6 +114,6 @@ export type ProjectInput = {
   gaugeSwatchRows?: number;
   gaugeSwatchStitches?: number;
   gaugeSwatchInches?: number;
+  thumbnail?: string;
+  timeSpentMinutes?: number;
 };
-
-

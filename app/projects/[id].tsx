@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Dimensions, ScrollView } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -16,6 +16,7 @@ import { useProjectsStore } from '@/store/useProjectsStore';
 import { ProjectCounter } from '@/types/project';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 export default function ProjectDetailScreen() {
   const theme = useTheme();
@@ -67,8 +68,7 @@ export default function ProjectDetailScreen() {
 
   const handleCounterScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    // Calculate index based on card width (SCREEN_WIDTH - 32 padding)
-    const index = Math.round(offsetX / (SCREEN_WIDTH - 32));
+    const index = Math.round(offsetX / CARD_WIDTH);
     setActiveCounterIndex(index);
   };
 
@@ -110,7 +110,8 @@ export default function ProjectDetailScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={handleCounterScroll}
-            snapToInterval={SCREEN_WIDTH - 32}
+            snapToInterval={CARD_WIDTH}
+            snapToAlignment="center"
             decelerationRate="fast"
             contentContainerStyle={styles.counterDeck}
           >
@@ -122,7 +123,7 @@ export default function ProjectDetailScreen() {
                   { 
                     backgroundColor: theme.colors.surface, 
                     borderColor: theme.colors.border,
-                    width: SCREEN_WIDTH - 32, // Full width minus padding
+                    width: CARD_WIDTH,
                   }
                 ]}
               >
@@ -230,9 +231,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
-    marginRight: 16, // Spacing between cards if we allowed seeing next one (but using paging here)
+    marginRight: 0, // We handle spacing via snapToInterval logic or specific container padding if needed
   },
-  // Remove margin from the last item if we were doing a partial view, but with paging we handle it differently
   counterLabel: {
     fontSize: 12,
     textTransform: 'uppercase',

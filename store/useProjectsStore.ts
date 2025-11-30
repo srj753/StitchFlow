@@ -119,6 +119,8 @@ const createProject = (input: ProjectInput): Project => {
     // New features
     journal: [],
     photos: [],
+    thumbnail: input.thumbnail,
+    timeSpentMinutes: input.timeSpentMinutes ?? 0,
     yarnIds: input.yarnIds ?? [],
     linkedYarns: input.linkedYarns ?? [],
     
@@ -473,6 +475,8 @@ export const useProjectsStore = create<ProjectsState>()(
               ? {
                   ...project,
                   photos: [photoUri, ...project.photos],
+                  // Auto-set thumbnail if none exists
+                  thumbnail: project.thumbnail || photoUri,
                   updatedAt: now(),
                 }
               : project,
@@ -482,15 +486,18 @@ export const useProjectsStore = create<ProjectsState>()(
       
       deletePhoto: (projectId, photoUri) => {
         set((state) => ({
-          projects: state.projects.map((project) =>
-            project.id === projectId
+          projects: state.projects.map((project) => {
+            const newPhotos = project.photos.filter((uri) => uri !== photoUri);
+            return project.id === projectId
               ? {
                   ...project,
-                  photos: project.photos.filter((uri) => uri !== photoUri),
+                  photos: newPhotos,
+                  // Update thumbnail if we deleted the current thumbnail
+                  thumbnail: project.thumbnail === photoUri ? (newPhotos[0] || undefined) : project.thumbnail,
                   updatedAt: now(),
                 }
-              : project,
-          ),
+              : project;
+          }),
         }));
       },
       
@@ -559,7 +566,7 @@ export const useProjectsStore = create<ProjectsState>()(
     {
       name: 'knotiq-projects',
       storage: createJSONStorage(storageResolver),
-      version: 5,
+      version: 6, // Increment version for migration
       migrate: (persistedState: unknown, version) => {
         const state = persistedState as any;
         if (!state) {
@@ -655,6 +662,15 @@ export const useProjectsStore = create<ProjectsState>()(
           }));
         }
 
+        // Migrate to v6: Add thumbnail and timeSpentMinutes
+        if (version < 6) {
+          migratedProjects = migratedProjects.map((project: any) => ({
+            ...project,
+            thumbnail: project.photos && project.photos.length > 0 ? project.photos[0] : undefined,
+            timeSpentMinutes: 0,
+          }));
+        }
+
         return {
           ...state,
           projects: migratedProjects,
@@ -663,4 +679,3 @@ export const useProjectsStore = create<ProjectsState>()(
     },
   ),
 );
-

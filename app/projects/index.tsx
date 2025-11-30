@@ -1,9 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -123,7 +122,8 @@ export default function ProjectsHomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <Card style={styles.sectionCard}>
+      {/* Stats Card (Simplified) */}
+      <View style={[styles.statsContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         <View style={styles.statsRow}>
           {stats.map((stat, index) => (
             <View
@@ -134,21 +134,25 @@ export default function ProjectsHomeScreen() {
             </View>
           ))}
         </View>
-        {activeProject ? (
-          <View style={styles.activeHint}>
-            <Text style={{ color: theme.colors.textSecondary }}>
-              Active project:{' '}
-              <Text style={{ color: theme.colors.text, fontWeight: '600' }}>{activeProject.name}</Text>
+        {activeProject && (
+          <View style={[styles.activeHint, { borderTopColor: theme.colors.border }]}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
+              Active: <Text style={{ color: theme.colors.text, fontWeight: '600' }}>{activeProject.name}</Text>
             </Text>
             <TouchableOpacity onPress={() => handleOpenProject(activeProject.id)}>
-              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>Resume</Text>
+              <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>Resume</Text>
             </TouchableOpacity>
           </View>
-        ) : null}
-      </Card>
+        )}
+      </View>
 
-      <Card title="Filters" style={styles.sectionCard}>
-        <View style={styles.filterRow}>
+      {/* Horizontal Filters - No Card Wrapper */}
+      <View style={styles.filtersContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.filterRow}
+        >
           {filters.map((item) => {
             const selected = filter === item.value;
             return (
@@ -158,22 +162,23 @@ export default function ProjectsHomeScreen() {
                 style={[
                   styles.chip,
                   {
-                    backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
+                    backgroundColor: selected ? theme.colors.accent : theme.colors.surface,
                     borderColor: selected ? theme.colors.accent : theme.colors.border,
+                    shadowColor: selected ? theme.colors.accent : 'transparent',
                   },
                 ]}>
                 <Text
                   style={{
-                    color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                    fontWeight: '600',
+                    color: selected ? '#000' : theme.colors.textSecondary,
+                    fontWeight: selected ? '700' : '500',
                   }}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
-      </Card>
+        </ScrollView>
+      </View>
     </View>
   );
 
@@ -208,10 +213,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 40,
+    paddingBottom: 100, // Add more bottom padding for tab bar
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   heroRow: {
     flexDirection: 'row',
@@ -241,7 +246,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     marginTop: 0,
     gap: 12,
   },
@@ -281,13 +286,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 6,
   },
-  sectionCard: {
-    marginTop: 12,
+  statsContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   statChip: {
     flex: 1,
@@ -301,7 +308,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 12,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginTop: 2,
@@ -310,20 +317,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  filtersContainer: {
+    marginBottom: 8,
   },
   filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-    marginTop: 4,
+    paddingRight: 16,
+    alignItems: 'center',
   },
   chip: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginHorizontal: 6,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    elevation: 1,
   },
   separator: {
     height: 16,

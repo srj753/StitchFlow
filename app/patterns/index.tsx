@@ -154,7 +154,7 @@ export default function PatternsScreen() {
 
       {/* Filters */}
       <View style={styles.filterRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
           {difficultyFilters.map((item) => {
             const selected = difficulty === item.value;
             return (
@@ -165,7 +165,9 @@ export default function PatternsScreen() {
                   styles.filterChip,
                   {
                     borderColor: selected ? theme.colors.accent : theme.colors.border,
-                    backgroundColor: selected ? theme.colors.accent : 'transparent',
+                    backgroundColor: selected ? theme.colors.accent : theme.colors.surface,
+                    shadowColor: selected ? theme.colors.accent : 'transparent',
+                    elevation: selected ? 1 : 0,
                   },
                 ]}>
                 <Text
@@ -230,7 +232,7 @@ const difficultyFilters: Array<{ label: string; value: DifficultyFilter }> = [
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
   header: {
     marginBottom: 8,

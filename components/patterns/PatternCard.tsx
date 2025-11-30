@@ -1,7 +1,8 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { SlideUp } from '@/components/animations/SlideUp';
-import { Card } from '@/components/Card';
 import { useTheme } from '@/hooks/useTheme';
 import { Pattern } from '@/types/pattern';
 
@@ -9,167 +10,227 @@ type PatternCardProps = {
   pattern: Pattern;
   onPreview: () => void;
   onSave: () => void;
-  index?: number; // For staggered animations
+  index?: number;
 };
 
-const difficultyCopy: Record<Pattern['difficulty'], string> = {
-  beginner: 'Beginner friendly',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced challenge',
+// Fallback colors if no palette is available
+const difficultyColors: Record<string, string[]> = {
+  beginner: ['#4ade80', '#22c55e'], // Green
+  intermediate: ['#facc15', '#eab308'], // Yellow
+  advanced: ['#f87171', '#ef4444'], // Red
+  default: ['#94a3b8', '#64748b'], // Slate gray
 };
 
 export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCardProps) {
   const theme = useTheme();
-  const palette = pattern.palette.slice(0, 4);
+  const palette = pattern.palette ? pattern.palette.slice(0, 3) : [];
+
+  // Use palette for the gradient if available, otherwise fallback to difficulty or default
+  const getGradientColors = () => {
+    if (palette.length >= 2) {
+      return palette.slice(0, 2);
+    } else if (palette.length === 1) {
+      return [palette[0], palette[0]]; // Solid gradient
+    }
+    
+    // Fallback to difficulty colors
+    const difficultyKey = pattern.difficulty?.toLowerCase() || 'default';
+    return difficultyColors[difficultyKey] || difficultyColors.default;
+  };
+
+  const gradientColors = getGradientColors();
 
   return (
     <SlideUp delay={index * 50} duration={300}>
-      <Card
-        title={pattern.name}
-        subtitle={`${pattern.designer} · ${difficultyCopy[pattern.difficulty]}`}
-        style={styles.card}>
-      {pattern.sourceType === 'imported' ? (
-        <View
-          style={[
-            styles.badge,
-            {
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surfaceAlt,
-            },
-          ]}>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Imported</Text>
-        </View>
-      ) : null}
-      <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-        {pattern.description}
-      </Text>
+      <View style={[styles.container, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.shadow }]}>
+        {/* Top Decoration Bar */}
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.colorBar}
+        />
 
-      <View style={styles.metaRow}>
-        <Meta label="Duration" value={pattern.duration} />
-        <Meta label="Yarn weight" value={pattern.yarnWeight} />
-        <Meta label="Hook" value={pattern.hookSize} />
-      </View>
-
-      <View style={styles.swatchRow}>
-        {palette.map((color) => (
-          <View key={color} style={[styles.swatch, { backgroundColor: color }]} />
-        ))}
-      </View>
-
-      <View style={styles.tagRow}>
-        {pattern.tags.map((tag) => (
-          <View key={tag} style={[styles.tag, { borderColor: theme.colors.border }]}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{tag}</Text>
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
+                {pattern.name}
+              </Text>
+              <Text style={[styles.designer, { color: theme.colors.textSecondary }]}>
+                by {pattern.designer}
+              </Text>
+            </View>
+            
+            {/* Difficulty Badge */}
+            <View style={[styles.badge, { backgroundColor: theme.colors.surfaceAlt }]}>
+              <Text style={[styles.badgeText, { color: theme.colors.text }]}>
+                {pattern.difficulty || 'Unknown'}
+              </Text>
+            </View>
           </View>
-        ))}
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          onPress={onPreview}
-          style={[
-            styles.primaryButton,
-            {
-              backgroundColor: theme.colors.accent,
-            },
-          ]}>
-          <Text style={styles.primaryButtonText}>Preview instructions</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onSave}
-          style={[
-            styles.secondaryButton,
-            {
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surfaceAlt,
-            },
-          ]}>
-          <Text style={{ color: theme.colors.text }}>Add to project</Text>
-        </TouchableOpacity>
+          {/* Details */}
+          <View style={styles.details}>
+            <View style={styles.detailItem}>
+              <FontAwesome name="clock-o" size={12} color={theme.colors.muted} />
+              <Text style={[styles.detailText, { color: theme.colors.muted }]}>{pattern.duration}</Text>
+            </View>
+            <View style={[styles.separator, { backgroundColor: theme.colors.border }]} />
+            <View style={styles.detailItem}>
+              <FontAwesome name="balance-scale" size={12} color={theme.colors.muted} />
+              <Text style={[styles.detailText, { color: theme.colors.muted }]}>{pattern.yarnWeight}</Text>
+            </View>
+          </View>
+
+          {/* Footer: Palette & Actions */}
+          <View style={styles.footer}>
+             {/* Mini Palette */}
+             <View style={styles.palette}>
+                {palette.map((color, i) => (
+                  <View 
+                    key={i} 
+                    style={[
+                      styles.swatch, 
+                      { 
+                        backgroundColor: color, 
+                        borderColor: theme.colors.surface, // Match card background for cutout effect
+                        zIndex: 10 - i, 
+                        marginLeft: i === 0 ? 0 : -8 
+                      }
+                    ]} 
+                  />
+                ))}
+                {palette.length === 0 && (
+                  <Text style={{ color: theme.colors.muted, fontSize: 12, fontStyle: 'italic' }}>
+                    No palette
+                  </Text>
+                )}
+             </View>
+
+             {/* Action Buttons */}
+             <View style={styles.actions}>
+                <TouchableOpacity onPress={onPreview} style={[styles.iconBtn, { backgroundColor: theme.colors.surfaceAlt }]}>
+                   <FontAwesome name="eye" size={14} color={theme.colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onSave} style={[styles.addBtn, { backgroundColor: theme.colors.text }]}>
+                   <Text style={[styles.addBtnText, { color: theme.colors.background }]}>Use</Text>
+                </TouchableOpacity>
+             </View>
+          </View>
+        </View>
       </View>
-    </Card>
     </SlideUp>
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
-  const theme = useTheme();
-  return (
-    <View style={styles.meta}>
-      <Text style={{ color: theme.colors.muted, fontSize: 12, letterSpacing: 0.4 }}>{label}</Text>
-      <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  card: {
+  container: {
+    borderRadius: 20,
+    overflow: 'hidden',
     marginBottom: 16,
+    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
-  description: {
-    fontSize: 15,
-    lineHeight: 21,
+  colorBar: {
+    height: 6,
+    width: '100%',
+  },
+  content: {
+    padding: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  designer: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   badge: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    marginBottom: 8,
+    borderRadius: 12,
   },
-  metaRow: {
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  details: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  meta: {
-    flex: 1,
-    gap: 4,
-  },
-  swatchRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  swatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    marginRight: 8,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  tag: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginRight: 8,
-    marginBottom: 8,
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  detailText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  separator: {
+    width: 1,
+    height: 12,
+    marginHorizontal: 12,
+    opacity: 0.5,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  palette: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  swatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
-  primaryButton: {
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addBtn: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButtonText: {
-    color: '#07080c',
+  addBtnText: {
+    fontSize: 13,
     fontWeight: '700',
   },
-  secondaryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
 });
-

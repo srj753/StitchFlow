@@ -1,13 +1,13 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useMemo } from 'react';
 import {
-  DimensionValue,
-  Platform,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
 
 import { SlideUp } from '@/components/animations/SlideUp';
 import { useTheme } from '@/hooks/useTheme';
@@ -18,19 +18,7 @@ type ProjectCardProps = {
   project: Project;
   onPress?: () => void;
   isActive?: boolean;
-  index?: number; // For staggered animations
-};
-
-const statusCopy: Record<Project['status'], string> = {
-  active: 'In progress',
-  paused: 'On hold',
-  finished: 'Finished',
-};
-
-const sourceCopy: Record<Project['patternSourceType'], string> = {
-  external: 'External link',
-  'built-in': 'Built-in pattern',
-  'my-pattern': 'My notes',
+  index?: number;
 };
 
 export const ProjectCard = memo(function ProjectCard({
@@ -40,22 +28,10 @@ export const ProjectCard = memo(function ProjectCard({
   index = 0,
 }: ProjectCardProps) {
   const theme = useTheme();
-  const incrementRound = useProjectsStore((state) => state.incrementRound);
+  const updateCounter = useProjectsStore((state) => state.updateCounter);
   const setActiveProject = useProjectsStore((state) => state.setActiveProject);
-  const status = (project.status ?? 'active') as Project['status'];
-  const shadowStyle = Platform.select({
-    web: {
-      boxShadow: `0px 18px 36px ${theme.colors.shadow}`,
-    },
-    default: {
-      shadowColor: theme.colors.shadow,
-      shadowOpacity: 0.15,
-      shadowRadius: 20,
-      shadowOffset: { width: 0, height: 12 },
-    },
-  });
+  const incrementRound = useProjectsStore((state) => state.incrementRound);
 
-  // Use counters instead of legacy fields
   const rowCounter = useMemo(() => {
     return project.counters.find((c) => c.type === 'row' || c.label.toLowerCase().includes('row'));
   }, [project.counters]);
@@ -65,23 +41,8 @@ export const ProjectCard = memo(function ProjectCard({
     return Math.min(100, (rowCounter.currentValue / rowCounter.targetValue) * 100);
   }, [rowCounter]);
 
-  const palette = project.colorPalette?.slice(0, 4) ?? [];
-  const progressWidth = useMemo(() => {
-    if (progress === undefined) return undefined;
-    if (progress <= 0) return 0;
-    return Math.max(progress, 1);
-  }, [progress]);
-  const progressWidthPercent = useMemo<DimensionValue | undefined>(() => {
-    if (progressWidth === undefined) return undefined;
-    const bounded = Math.min(100, Math.max(0, progressWidth));
-    return `${bounded.toFixed(2)}%` as DimensionValue;
-  }, [progressWidth]);
-
-  const updateCounter = useProjectsStore((state) => state.updateCounter);
-
   const handleQuickAdjust = useCallback(
     (delta: number) => {
-      // Haptic feedback
       if (delta > 0) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } else {
@@ -91,7 +52,6 @@ export const ProjectCard = memo(function ProjectCard({
       if (rowCounter) {
         updateCounter(project.id, rowCounter.id, rowCounter.currentValue + delta);
       } else {
-        // Fallback to legacy
         incrementRound(project.id, delta);
       }
     },
@@ -103,241 +63,202 @@ export const ProjectCard = memo(function ProjectCard({
     onPress?.();
   }, [onPress, project.id, setActiveProject]);
 
+  const hasImage = !!project.thumbnail;
+  const palette = project.colorPalette?.slice(0, 5) ?? [];
+
   return (
     <SlideUp delay={index * 50} duration={300}>
       <TouchableOpacity
         onPress={handleOpen}
+        activeOpacity={0.9}
         style={[
-          styles.card,
+          styles.container,
           {
-            backgroundColor: theme.colors.card,
+            backgroundColor: theme.colors.surface,
             borderColor: isActive ? theme.colors.accent : theme.colors.border,
+            shadowColor: theme.colors.shadow,
           },
-          shadowStyle,
         ]}>
-      <View style={[styles.headerRow, styles.block]}>
-        <View style={styles.titleColumn}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>{project.name}</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-            {project.patternName ? project.patternName : 'Custom plan'}
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: isActive ? theme.colors.accentMuted : theme.colors.surfaceAlt,
-              borderColor: isActive ? theme.colors.accent : theme.colors.border,
-            },
-          ]}>
-          <Text
-            style={[
-              styles.statusText,
-              { color: isActive ? theme.colors.accent : theme.colors.textSecondary },
-            ]}>
-            {statusCopy[status]}
-          </Text>
-        </View>
-      </View>
-      <View style={[styles.metaRow, styles.block]}>
-        <Text style={[styles.meta, { color: theme.colors.muted }]}>
-          {sourceCopy[project.patternSourceType]}
-        </Text>
-      </View>
+        
+        {/* Layout: Image Left (if exists) or Top Bar (if no image) */}
+        <View style={[styles.content, !hasImage && styles.contentNoImage]}>
+          {hasImage ? (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: project.thumbnail }} style={styles.image} />
+              {/* Progress Bar Overlay on Image */}
+              {progress !== undefined && (
+                <View style={styles.progressOverlay}>
+                  <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: theme.colors.accent }]} />
+                </View>
+              )}
+            </View>
+          ) : (
+            // Fallback: Decorative Top Bar if no image
+            <View style={[styles.decorativeBar, { backgroundColor: palette[0] || theme.colors.accent }]}>
+               {progress !== undefined && (
+                  <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: 'rgba(255,255,255,0.5)' }]} />
+               )}
+            </View>
+          )}
 
-      {project.yarnWeight ? (
-        <Text style={[styles.meta, styles.block, { color: theme.colors.muted }]}>
-          Yarn weight · {project.yarnWeight}
-        </Text>
-      ) : null}
+          {/* Info Column */}
+          <View style={styles.infoContainer}>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
+                {project.name}
+              </Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                {project.patternName || 'Custom Pattern'}
+              </Text>
+            </View>
 
-      <View style={[styles.statRow, styles.block]}>
-        <View style={styles.stat}>
-          <Text style={[styles.statLabel, { color: theme.colors.muted }]}>
-            {rowCounter?.label ?? 'Rows'}
-          </Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>
-            {rowCounter?.currentValue ?? 0}
-            {rowCounter?.targetValue ? ` / ${rowCounter.targetValue}` : ''}
-          </Text>
+            {/* Stats Row */}
+            <View style={styles.statsRow}>
+              <View style={[styles.statBadge, { backgroundColor: theme.colors.surfaceAlt }]}>
+                <FontAwesome name="hashtag" size={10} color={theme.colors.textSecondary} style={{marginRight: 4}} />
+                <Text style={[styles.statText, { color: theme.colors.text }]}>
+                  {rowCounter ? `${rowCounter.currentValue}` : '0'}
+                  {rowCounter?.targetValue ? `/${rowCounter.targetValue}` : ''}
+                </Text>
+              </View>
+
+              {project.timeSpentMinutes > 0 && (
+                <View style={[styles.statBadge, { backgroundColor: theme.colors.surfaceAlt }]}>
+                  <FontAwesome name="clock-o" size={10} color={theme.colors.textSecondary} style={{marginRight: 4}} />
+                  <Text style={[styles.statText, { color: theme.colors.text }]}>
+                    {Math.floor(project.timeSpentMinutes / 60)}h {project.timeSpentMinutes % 60}m
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Palette (Only show if no image to add visual interest) */}
+            {!hasImage && palette.length > 0 && (
+              <View style={styles.paletteRow}>
+                {palette.map((color, i) => (
+                  <View key={i} style={[styles.swatch, { backgroundColor: color }]} />
+                ))}
+              </View>
+            )}
+
+            {/* Quick Actions */}
+            <View style={styles.actionRow}>
+               <TouchableOpacity
+                onPress={() => handleQuickAdjust(1)}
+                style={[styles.quickBtn, { backgroundColor: theme.colors.accent }]}>
+                <FontAwesome name="plus" size={12} color="#000" />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-        <View style={styles.stat}>
-          <Text style={[styles.statLabel, { color: theme.colors.muted }]}>Height</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>
-            {project.currentHeightInches.toFixed(1)} in
-          </Text>
-        </View>
-      </View>
-
-      {progressWidthPercent !== undefined ? (
-        <View
-          style={[styles.progressTrack, styles.block, { backgroundColor: theme.colors.cardMuted }]}
-          accessibilityRole="progressbar"
-          accessibilityValue={{ now: Math.round(progressWidth ?? 0), min: 0, max: 100 }}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: progressWidthPercent,
-                backgroundColor: theme.colors.accent,
-              },
-            ]}
-          />
-        </View>
-      ) : null}
-
-      {palette.length > 0 ? (
-        <View style={[styles.paletteRow, styles.block]}>
-          {palette.map((color) => (
-            <View key={color} style={[styles.swatch, { backgroundColor: color }]} />
-          ))}
-        </View>
-      ) : null}
-
-      <View style={[styles.actionRow, styles.block]}>
-        <TouchableOpacity
-          onPress={() => handleQuickAdjust(-1)}
-          style={[
-            styles.actionButton,
-            {
-              borderColor: theme.colors.border,
-            },
-          ]}>
-          <Text style={{ color: theme.colors.textSecondary }}>-1 round</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => handleQuickAdjust(1)}
-          style={[
-            styles.actionButton,
-            {
-              borderColor: theme.colors.accent,
-              backgroundColor: theme.colors.accentMuted,
-            },
-          ]}>
-          <Text style={{ color: theme.colors.accent }}>+1 round</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleOpen}
-          style={[
-            styles.actionButton,
-            styles.actionButtonLast,
-            {
-              borderColor: theme.colors.border,
-            },
-          ]}>
-          <Text style={{ color: theme.colors.textSecondary }}>Open</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={[styles.timestamp, { color: theme.colors.textSecondary }]}>
-        Updated {new Date(project.updatedAt).toLocaleDateString()}
-      </Text>
-    </TouchableOpacity>
+      </TouchableOpacity>
     </SlideUp>
   );
 });
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 24,
+  container: {
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 20,
-    marginBottom: 4,
-  },
-  block: {
     marginBottom: 12,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
-  headerRow: {
+  content: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    height: 110,
   },
-  titleColumn: {
+  contentNoImage: {
+    flexDirection: 'column',
+    height: 'auto',
+    minHeight: 120,
+  },
+  imageContainer: {
+    width: 100,
+    height: '100%',
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  decorativeBar: {
+    height: 8,
+    width: '100%',
+  },
+  progressOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  progressBar: {
+    height: '100%',
+  },
+  infoContainer: {
     flex: 1,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  header: {
+    gap: 2,
   },
   title: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '500',
   },
-  statusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
   },
-  statusText: {
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statText: {
     fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  meta: {
-    fontSize: 13,
-    letterSpacing: 0.5,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  stat: {
-    flex: 1,
-    marginRight: 12,
-  },
-  statLabel: {
-    fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  progressTrack: {
-    height: 8,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
   },
   paletteRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    marginTop: 12,
+    gap: 6,
   },
   swatch: {
-    width: 18,
-    height: 18,
-    borderRadius: 6,
-    marginRight: 6,
-    marginBottom: 6,
-  },
-  timestamp: {
-    fontSize: 12,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
   },
   actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
   },
-  actionButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
+  quickBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
-  },
-  actionButtonLast: {
-    marginRight: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
-
