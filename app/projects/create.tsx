@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -86,125 +87,65 @@ export default function CreateProjectScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Projects</Text>
-          <Text style={[styles.title, { color: theme.colors.text }]}>New project</Text>
-          <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-            Capture yarn info, palette, pattern snippets, and goals. We’ll keep everything in sync
-            across tabs.
-          </Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+             <FontAwesome name="times" size={20} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+          <View>
+            <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>NEW PROJECT</Text>
+            <Text style={[styles.title, { color: theme.colors.text }]}>Start fresh</Text>
+          </View>
         </View>
 
         {patternTemplate ? (
-          <Card
-            title="Template loaded"
-            subtitle={`${patternTemplate.name} · ${patternTemplate.designer}`}
-            style={styles.section}>
-            <Text style={{ color: theme.colors.textSecondary, marginBottom: 12 }}>
-              We pre-filled the form using this library pattern. Adjust anything before saving.
-            </Text>
-            <View style={styles.templateMetaRow}>
-              <TemplateMeta label="Difficulty" value={formatDifficulty(patternTemplate.difficulty)} />
-              <TemplateMeta label="Yarn weight" value={patternTemplate.yarnWeight} />
-              <TemplateMeta label="Hook" value={patternTemplate.hookSize} />
+          <View style={[styles.templateCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.templateHeader}>
+                <FontAwesome name="file-text-o" size={20} color={theme.colors.accent} />
+                <View style={{ flex: 1 }}>
+                    <Text style={[styles.templateTitle, { color: theme.colors.text }]}>Template Loaded</Text>
+                    <Text style={{ color: theme.colors.textSecondary }}>{patternTemplate.name}</Text>
+                </View>
+                <TouchableOpacity onPress={handleClearTemplate}>
+                    <FontAwesome name="times-circle" size={20} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
             </View>
-            <View style={styles.templateSwatches}>
-              {patternTemplate.palette.map((color) => (
-                <View key={color} style={[styles.templateSwatch, { backgroundColor: color }]} />
-              ))}
-            </View>
+            
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+            
             <View style={styles.templateActions}>
-              <TouchableOpacity
-                onPress={handleViewPattern}
-                style={[
-                  styles.templateActionPrimary,
-                  {
-                    backgroundColor: theme.colors.accent,
-                  },
-                ]}>
-                <Text style={styles.templateActionPrimaryText}>Back to library</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleClearTemplate}
-                style={[
-                  styles.templateActionSecondary,
-                  {
-                    borderColor: theme.colors.border,
-                  },
-                ]}>
-                <Text style={{ color: theme.colors.textSecondary }}>Clear template</Text>
-              </TouchableOpacity>
+                <TouchableOpacity onPress={handleViewPattern}>
+                    <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>View Pattern</Text>
+                </TouchableOpacity>
             </View>
-          </Card>
+          </View>
         ) : fromDraft && draftPrefill ? (
-          <Card
-            title="Template loaded"
-            subtitle="From Pattern Maker draft"
-            style={styles.section}>
-            <Text style={{ color: theme.colors.textSecondary, marginBottom: 12 }}>
-              Pulled from your current pattern draft. Update anything in the maker or tweak fields
-              below before saving.
-            </Text>
-            {draft.description ? (
-              <Text style={{ color: theme.colors.textSecondary, marginBottom: 12 }}>
-                {draft.description}
-              </Text>
-            ) : null}
-            <View style={styles.templateMetaRow}>
-              <TemplateMeta label="Difficulty" value={formatDifficulty(draft.difficulty)} />
-              <TemplateMeta label="Yarn weight" value={draft.yarnWeight || '—'} />
-              <TemplateMeta label="Hook" value={draft.hookSize || '—'} />
+          <View style={[styles.templateCard, { backgroundColor: theme.colors.surface }]}>
+             <View style={styles.templateHeader}>
+                <FontAwesome name="pencil-square-o" size={20} color={theme.colors.accent} />
+                <View style={{ flex: 1 }}>
+                    <Text style={[styles.templateTitle, { color: theme.colors.text }]}>Draft Loaded</Text>
+                    <Text style={{ color: theme.colors.textSecondary }}>From Pattern Maker</Text>
+                </View>
+                <TouchableOpacity onPress={handleClearTemplate}>
+                    <FontAwesome name="times-circle" size={20} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
             </View>
-            <View style={styles.templateSwatches}>
-              {draft.palette.map((color, index) => (
-                <View key={`${color}-${index}`} style={[styles.templateSwatch, { backgroundColor: color }]} />
-              ))}
+             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+             <View style={styles.templateActions}>
+                <TouchableOpacity onPress={handleEditDraft}>
+                    <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>Edit Draft</Text>
+                </TouchableOpacity>
             </View>
-            <View style={styles.templateActions}>
-              <TouchableOpacity
-                onPress={handleEditDraft}
-                style={[
-                  styles.templateActionPrimary,
-                  {
-                    backgroundColor: theme.colors.accent,
-                  },
-                ]}>
-                <Text style={styles.templateActionPrimaryText}>Edit in Pattern Maker</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleClearTemplate}
-                style={[
-                  styles.templateActionSecondary,
-                  {
-                    borderColor: theme.colors.border,
-                  },
-                ]}>
-                <Text style={{ color: theme.colors.textSecondary }}>Clear template</Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
+          </View>
         ) : null}
 
-        <Card title="Project details" subtitle="Fill out as much as you like" style={styles.section}>
-          <ProjectForm
+        <ProjectForm
             onSubmit={handleSubmit}
-            submitLabel="Create project"
+            submitLabel="Create Project"
             prefill={resolvedPrefill}
             prefillKey={prefillKey}
-          />
-        </Card>
-
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[
-            styles.cancelButton,
-            {
-              borderColor: theme.colors.border,
-            },
-          ]}>
-          <Text style={{ color: theme.colors.textSecondary }}>Cancel</Text>
-        </TouchableOpacity>
+        />
       </ScrollView>
     </Screen>
   );
@@ -212,82 +153,50 @@ export default function CreateProjectScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
   },
-  section: {
-    marginBottom: 20,
+  backButton: {
+      marginTop: 4,
+      padding: 4,
   },
   eyebrow: {
-    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 4,
     letterSpacing: 1,
-    fontSize: 12,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
   },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
+  templateCard: {
+      borderRadius: 20,
+      padding: 16,
+      marginBottom: 24,
   },
-  templateMetaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
+  templateHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
   },
-  templateMeta: {
-    flex: 1,
-    marginRight: 12,
-    marginBottom: 8,
+  templateTitle: {
+      fontSize: 16,
+      fontWeight: '700',
   },
-  templateMetaLabel: {
-    fontSize: 12,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  templateMetaValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  templateSwatches: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  templateSwatch: {
-    width: 30,
-    height: 30,
-    borderRadius: 12,
-    marginRight: 8,
+  divider: {
+      height: 1,
+      opacity: 0.1,
+      marginVertical: 12,
   },
   templateActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  templateActionPrimary: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-  },
-  templateActionPrimaryText: {
-    color: '#07080c',
-    fontWeight: '700',
-  },
-  templateActionSecondary: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  cancelButton: {
-    marginTop: 24,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
   },
 });
 

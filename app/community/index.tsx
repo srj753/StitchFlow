@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { SlideUp } from '@/components/animations/SlideUp';
 import { Screen } from '@/components/Screen';
@@ -48,7 +48,7 @@ export default function CommunityScreen() {
     <Screen>
       <View style={styles.header}>
         <View>
-          <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Community</Text>
+          <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>COMMUNITY</Text>
           <Text style={[styles.title, { color: theme.colors.text }]}>Discover & Share</Text>
         </View>
         <TouchableOpacity
@@ -60,10 +60,10 @@ export default function CommunityScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.feed}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
         {communityPosts.map((post, index) => (
           <SlideUp key={post.id} delay={index * 100}>
-            <View style={[styles.postCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <View style={[styles.postCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               {/* User Header */}
               <View style={styles.userHeader}>
                 <Image source={{ uri: post.avatar }} style={styles.avatar} />
@@ -106,7 +106,7 @@ export default function CommunityScreen() {
             </View>
           </SlideUp>
         ))}
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   eyebrow: {
-    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 1,
-    fontSize: 12,
     marginBottom: 4,
   },
   title: {
@@ -147,7 +147,12 @@ const styles = StyleSheet.create({
   postCard: {
     borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 1,
+    // borderWidth: 1, // Removed border for cleaner look
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
   userHeader: {
     flexDirection: 'row',

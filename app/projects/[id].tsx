@@ -1,8 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -12,6 +13,8 @@ import { ProjectTab, ProjectTabs } from '@/components/projects/ProjectTabs';
 import { StudioView } from '@/components/projects/StudioView';
 import { TrackView } from '@/components/projects/TrackView';
 import { useTheme } from '@/hooks/useTheme';
+import { useToast } from '@/hooks/useToast';
+import { useAppearanceStore } from '@/store/useAppearanceStore';
 import { useProjectsStore } from '@/store/useProjectsStore';
 import { ProjectCounter } from '@/types/project';
 
@@ -20,13 +23,17 @@ const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 export default function ProjectDetailScreen() {
   const theme = useTheme();
+  const { mode } = useAppearanceStore();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const projects = useProjectsStore((state) => state.projects);
   const updateCounter = useProjectsStore((state) => state.updateCounter);
+  const deleteProject = useProjectsStore((state) => state.deleteProject);
+  const { showSuccess } = useToast();
   
   const [activeTab, setActiveTab] = useState<ProjectTab>('track');
   const [activeCounterIndex, setActiveCounterIndex] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
 
   const project = useMemo(() => projects.find((p) => p.id === id), [projects, id]);
 
@@ -72,25 +79,112 @@ export default function ProjectDetailScreen() {
     setActiveCounterIndex(index);
   };
 
+  const handleDeleteProject = () => {
+    Alert.alert(
+        "Delete Project",
+        "Are you sure you want to delete this project? This action cannot be undone.",
+        [
+            { text: "Cancel", style: "cancel" },
+            { 
+                text: "Delete", 
+                style: "destructive", 
+                onPress: () => {
+                    deleteProject(project.id);
+                    showSuccess("Project deleted");
+                    router.back();
+                }
+            }
+        ]
+    );
+  };
+
   return (
-    <View style={{ flex: 1 }}>
-      <Screen>
-        {/* Custom Header */}
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      {/* Decorative Header Background */}
+      <View style={styles.headerBackgroundContainer}>
+        {project.thumbnail ? (
+           <ImageBackground 
+             source={{ uri: project.thumbnail }} 
+             style={styles.headerImage}
+             blurRadius={50}
+           >
+             <View style={[styles.headerOverlay, { backgroundColor: mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)' }]} />
+           </ImageBackground>
+        ) : (
+          <LinearGradient
+            colors={[theme.colors.surfaceAlt, theme.colors.background]}
+            style={styles.headerGradient}
+          />
+        )}
+      </View>
+
+      {/* Screen with 0 top padding to allow header to sit flush */}
+      <Screen contentStyle={{ paddingTop: 0 }}>
+        {/* Header Content */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-            <FontAwesome name="arrow-left" size={20} color={theme.colors.text} />
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
-              {project.name}
-            </Text>
-            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-              {project.patternName || 'Custom Project'}
-            </Text>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              style={[styles.iconButton, { backgroundColor: theme.colors.surfaceAlt }]}
+            >
+              <FontAwesome name="arrow-left" size={16} color={theme.colors.text} />
+            </TouchableOpacity>
+            
+            <View style={{ position: 'relative' }}>
+                <TouchableOpacity 
+                    onPress={() => setShowMenu(!showMenu)}
+                    style={[styles.iconButton, { backgroundColor: theme.colors.surfaceAlt }]}
+                >
+                    <FontAwesome name="ellipsis-h" size={16} color={theme.colors.text} />
+                </TouchableOpacity>
+                
+                {/* Dropdown Menu */}
+                {showMenu && (
+                    <View style={[styles.dropdownMenu, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                        <TouchableOpacity 
+                            style={styles.menuItem}
+                            onPress={() => {
+                                setShowMenu(false);
+                                // Navigate to edit screen or show modal (placeholder for now)
+                                Alert.alert("Edit Project", "Edit functionality coming soon.");
+                            }}
+                        >
+                            <FontAwesome name="pencil" size={14} color={theme.colors.text} style={styles.menuIcon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>Edit Project</Text>
+                        </TouchableOpacity>
+                        <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
+                        <TouchableOpacity 
+                            style={styles.menuItem}
+                            onPress={() => {
+                                setShowMenu(false);
+                                handleDeleteProject();
+                            }}
+                        >
+                            <FontAwesome name="trash-o" size={14} color="#ff4444" style={styles.menuIcon} />
+                            <Text style={[styles.menuText, { color: '#ff4444' }]}>Delete Project</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
           </View>
-          <TouchableOpacity style={styles.iconButton}>
-            <FontAwesome name="ellipsis-v" size={20} color={theme.colors.text} />
-          </TouchableOpacity>
+          
+          <View style={styles.headerTitleRow}>
+             <View style={{ flex: 1 }}>
+                <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={2}>
+                  {project.name}
+                </Text>
+                <View style={styles.subtitleRow}>
+                  <View style={[styles.badge, { backgroundColor: theme.colors.accentMuted }]}>
+                    <Text style={[styles.badgeText, { color: theme.colors.accent }]}>
+                       {project.status === 'active' ? 'In Progress' : project.status}
+                    </Text>
+                  </View>
+                  <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                    {project.patternName || 'Custom Project'}
+                  </Text>
+                </View>
+             </View>
+          </View>
         </View>
 
         {/* Tabs */}
@@ -176,32 +270,127 @@ export default function ProjectDetailScreen() {
           )}
         </View>
       )}
+      
+      {/* Transparent overlay to close menu when tapping outside */}
+      {showMenu && (
+        <TouchableOpacity 
+            style={styles.menuOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowMenu(false)}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  headerBackgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 250,
+    zIndex: 0,
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerGradient: {
+    flex: 1,
+  },
   header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    zIndex: 20, // Ensure header is above overlay
+  },
+  headerTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  headerText: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 12,
+    zIndex: 20,
   },
   iconButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownMenu: {
+      position: 'absolute',
+      top: 48,
+      right: 0,
+      width: 160,
+      borderRadius: 12,
+      borderWidth: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 10,
+      zIndex: 100,
+      paddingVertical: 4,
+  },
+  menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+  },
+  menuIcon: {
+      marginRight: 12,
+      width: 16,
+      textAlign: 'center',
+  },
+  menuText: {
+      fontSize: 14,
+      fontWeight: '500',
+  },
+  menuDivider: {
+      height: 1,
+      opacity: 0.1,
+  },
+  menuOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 10,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    lineHeight: 38,
+    marginBottom: 8,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  subtitle: {
+    fontSize: 16,
   },
   content: {
     flex: 1,
@@ -209,7 +398,7 @@ const styles = StyleSheet.create({
   },
   floatingContainer: {
     position: 'absolute',
-    bottom: 100, // Above tab bar
+    bottom: 20, // Above tab bar if needed, or just bottom 20
     left: 0,
     right: 0,
     height: 100,
@@ -231,7 +420,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
-    marginRight: 0, // We handle spacing via snapToInterval logic or specific container padding if needed
+    marginRight: 0, 
   },
   counterLabel: {
     fontSize: 12,

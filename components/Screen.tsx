@@ -21,9 +21,10 @@ type ScreenProps = {
 export function Screen({ children, scrollable = true, contentStyle }: ScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  // Adjust bottom padding for web to avoid cutting off content if no tab bar is present or different layout
   const isWeb = Platform.OS === 'web';
-  const bottomPadding = insets.bottom + theme.spacing.xl + (isWeb ? 48 : 32);
+  
+  // On web, we don't have a bottom tab bar overlay usually, but we might want padding
+  const bottomPadding = insets.bottom + theme.spacing.xl + (isWeb ? 24 : 32);
 
   const content = (
     <View
@@ -34,73 +35,117 @@ export function Screen({ children, scrollable = true, contentStyle }: ScreenProp
           paddingTop: theme.spacing.lg,
           paddingBottom: bottomPadding,
         },
+        isWeb && styles.webContentConstraint,
         contentStyle,
       ]}>
       {children}
     </View>
   );
 
-  const containerStyle = [
+  const safeAreaStyle = [
     styles.safeArea,
     {
       backgroundColor: theme.colors.background,
     },
-    // Web-specific centering constraint
-    isWeb && styles.webContainer,
   ];
 
+  // Web-specific simplified wrapper to avoid layout/touch issues
+  if (isWeb) {
+     return (
+        <View style={[styles.container, { backgroundColor: theme.colors.background, overflow: 'hidden' }]}>
+            <View style={styles.webInnerContainer}>
+                {scrollable ? (
+                    <ScrollView
+                        style={{ width: '100%', flex: 1 }}
+                        contentContainerStyle={[styles.scrollContainer, styles.webScrollContainer]}
+                        showsVerticalScrollIndicator={true}
+                        // IMPORTANT: On web, 'handled' can swallow clicks. 
+                        // Use 'always' or remove the prop for web if possible, but 'always' is usually safer for buttons.
+                        // Or 'undefined' to let default web behavior happen.
+                        keyboardShouldPersistTaps={undefined} 
+                    >
+                        {content}
+                    </ScrollView>
+                ) : (
+                    <View style={[styles.staticContainer, styles.webScrollContainer]}>
+                        {content}
+                    </View>
+                )}
+            </View>
+        </View>
+     );
+  }
+
+  // Native Implementation
   return (
-    <View style={[styles.webBackground, { backgroundColor: isWeb ? '#111' : theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <SafeAreaView
-        style={containerStyle}
+        style={safeAreaStyle}
         edges={['top', 'left', 'right']}>
         <StatusBar barStyle={theme.barStyle} />
-        {scrollable ? (
-          <KeyboardAvoidingView
-            style={styles.avoider}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.scrollContainer}
-              showsVerticalScrollIndicator={!isWeb} // Hide scrollbar on web for cleaner look
-            >
-              {content}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        ) : (
-          content
-        )}
+        
+        <View style={styles.innerContainer}>
+            {scrollable ? (
+            <KeyboardAvoidingView
+                style={styles.avoider}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <ScrollView
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.scrollContainer}
+                showsVerticalScrollIndicator={false}
+                >
+                {content}
+                </ScrollView>
+            </KeyboardAvoidingView>
+            ) : (
+            <View style={styles.staticContainer}>
+                {content}
+            </View>
+            )}
+        </View>
       </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  webBackground: {
+  container: {
     flex: 1,
-    justifyContent: 'center', // Center the "mobile" app on desktop
-    flexDirection: 'row',
-  },
-  webContainer: {
-    maxWidth: 500, // Limit width on desktop to simulate mobile view
-    width: '100%',
-    height: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 5,
   },
   safeArea: {
     flex: 1,
   },
+  innerContainer: {
+    flex: 1,
+  },
+  webInnerContainer: {
+    flex: 1,
+    alignItems: 'center', // Center content column
+    width: '100%',
+    height: '100%', // Ensure full height
+  },
   avoider: {
     flex: 1,
+    width: '100%',
   },
   scrollContainer: {
     flexGrow: 1,
   },
+  staticContainer: {
+    flex: 1,
+    width: '100%',
+  },
+  webScrollContainer: {
+    alignItems: 'center',
+    flexGrow: 1,
+  },
   content: {
     flexGrow: 1,
+    width: '100%',
+  },
+  webContentConstraint: {
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
   },
 });

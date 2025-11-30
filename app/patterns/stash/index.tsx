@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -46,11 +47,6 @@ export default function YarnStashScreen() {
     [yarns],
   );
 
-  const totalMeters = useMemo(
-    () => yarns.reduce((sum, yarn) => sum + yarn.skeinsOwned * yarn.metersPerSkein, 0),
-    [yarns],
-  );
-
   const availableSkeins = useMemo(
     () => yarns.reduce((sum, yarn) => sum + (yarn.skeinsOwned - yarn.skeinsReserved), 0),
     [yarns],
@@ -70,21 +66,26 @@ export default function YarnStashScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Yarn Stash</Text>
-      <Text style={[styles.title, { color: theme.colors.text }]}>Your materials</Text>
-      <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-        Track what you have, reserve yarn for projects, and see availability at a glance.
-      </Text>
-
+      <View style={styles.headerTop}>
+          <View>
+            <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>INVENTORY</Text>
+            <Text style={[styles.title, { color: theme.colors.text }]}>Yarn Stash</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/patterns/stash/add' as any)}
+            style={[styles.addButton, { backgroundColor: theme.colors.accent }]}>
+            <FontAwesome name="plus" size={16} color="#000" />
+          </TouchableOpacity>
+      </View>
+      
       <View style={styles.statsRow}>
-        <StatCard label="Total skeins" value={totalSkeins.toString()} theme={theme} />
+        <StatCard label="Total Skeins" value={totalSkeins.toString()} theme={theme} />
         <StatCard
           label="Available"
           value={availableSkeins.toString()}
           theme={theme}
           highlight
         />
-        <StatCard label="Total meters" value={Math.round(totalMeters).toString()} theme={theme} />
       </View>
 
       <View
@@ -95,18 +96,18 @@ export default function YarnStashScreen() {
             backgroundColor: theme.colors.surfaceAlt,
           },
         ]}>
+        <FontAwesome name="search" size={16} color={theme.colors.muted} style={{ marginRight: 8 }} />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search by name, brand, or color..."
+          placeholder="Search name, brand, color..."
           placeholderTextColor={theme.colors.muted}
           style={[styles.searchInput, { color: theme.colors.text }]}
         />
       </View>
 
       <View style={styles.filterRow}>
-        <Text style={[styles.filterLabel, { color: theme.colors.muted }]}>Filter by weight</Text>
-        <View style={styles.chipRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {weightOptions.map((option) => {
             const selected = weightFilter === option.value;
             return (
@@ -117,12 +118,12 @@ export default function YarnStashScreen() {
                   styles.chip,
                   {
                     borderColor: selected ? theme.colors.accent : theme.colors.border,
-                    backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
+                    backgroundColor: selected ? theme.colors.accent : theme.colors.surfaceAlt,
                   },
                 ]}>
                 <Text
                   style={{
-                    color: selected ? theme.colors.accent : theme.colors.textSecondary,
+                    color: selected ? '#000' : theme.colors.textSecondary,
                     fontWeight: '600',
                     fontSize: 12,
                   }}>
@@ -131,14 +132,8 @@ export default function YarnStashScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
-
-      <TouchableOpacity
-        onPress={() => router.push('/patterns/stash/add' as any)}
-        style={[styles.addButton, { backgroundColor: theme.colors.accent }]}>
-        <Text style={styles.addButtonText}>+ Add yarn to stash</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -150,10 +145,10 @@ export default function YarnStashScreen() {
         renderItem={({ item }) => <YarnCard yarn={item} theme={theme} router={router} />}
         ListHeaderComponent={renderHeader}
         ListFooterComponent={
-          <Card title="Quick blanket estimator" subtitle="Very rough approximation">
-            <Text style={{ color: theme.colors.textSecondary, marginBottom: 12 }}>
-              Enter target dimensions and average yardage per skein to estimate how many skeins you
-              might need. Calculations include ~15% buffer and will be refined later.
+          <View style={[styles.estimatorCard, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Quick Estimator</Text>
+            <Text style={{ color: theme.colors.textSecondary, marginBottom: 16, fontSize: 13 }}>
+              Rough math for blankets based on width/height.
             </Text>
             <View style={styles.estimatorRow}>
               <EstimatorField
@@ -168,34 +163,30 @@ export default function YarnStashScreen() {
                 onChangeText={setEstimatorHeight}
                 theme={theme}
               />
-            </View>
-            <View style={styles.estimatorRow}>
               <EstimatorField
-                label="Yards per skein"
+                label="Yds/skein"
                 value={estimatorYardage}
                 onChangeText={setEstimatorYardage}
                 theme={theme}
               />
             </View>
-            <Text style={{ color: theme.colors.text }}>
-              ≈ {estimatorResult.estimatedYards.toFixed(0)} yards ·{' '}
-              {estimatorResult.estimatedSkeins.toFixed(1)} skeins
-            </Text>
-            <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 4 }}>
-              TODO: plug in gauge swatches and yarn weights for smarter math.
-            </Text>
-          </Card>
+            <View style={[styles.estimatorResult, { backgroundColor: theme.colors.surfaceAlt }]}>
+                <Text style={{ color: theme.colors.text, fontWeight: '700' }}>
+                ≈ {estimatorResult.estimatedSkeins.toFixed(1)} skeins needed
+                </Text>
+            </View>
+          </View>
         }
         ListEmptyComponent={
           <EmptyState
             icon="🧵"
-            title={searchQuery || weightFilter !== 'all' ? 'No matching yarns' : 'No yarns yet'}
+            title={searchQuery || weightFilter !== 'all' ? 'No matching yarns' : 'Stash is empty'}
             description={
               searchQuery || weightFilter !== 'all'
-                ? "No yarns match your filters. Try adjusting your search or add new yarns to your stash."
-                : "Add yarns to track what you have, reserve them for projects, and plan future makes."
+                ? "Try adjusting your filters."
+                : "Add yarns to track what you have and reserve them for projects."
             }
-            actionLabel="Add yarn to stash"
+            actionLabel="Add yarn"
             onAction={() => router.push('/patterns/stash/add' as any)}
           />
         }
@@ -223,16 +214,15 @@ function StatCard({
       style={[
         styles.statCard,
         {
-          borderColor: highlight ? theme.colors.accent : theme.colors.border,
-          backgroundColor: highlight ? theme.colors.accentMuted : theme.colors.surfaceAlt,
+          backgroundColor: theme.colors.surface,
         },
       ]}>
-      <Text style={{ color: theme.colors.muted, fontSize: 11, letterSpacing: 0.5 }}>{label}</Text>
+      <Text style={{ color: theme.colors.textSecondary, fontSize: 11, fontWeight: '600', textTransform: 'uppercase' }}>{label}</Text>
       <Text
         style={{
           color: highlight ? theme.colors.accent : theme.colors.text,
-          fontSize: 20,
-          fontWeight: '700',
+          fontSize: 24,
+          fontWeight: '800',
         }}>
         {value}
       </Text>
@@ -250,81 +240,39 @@ function YarnCard({
   router: ReturnType<typeof useRouter>;
 }) {
   const available = yarn.skeinsOwned - yarn.skeinsReserved;
-  const totalMeters = yarn.skeinsOwned * yarn.metersPerSkein;
 
   return (
-    <Card style={styles.yarnCard}>
-      <TouchableOpacity onPress={() => router.push(`/patterns/stash/${yarn.id}` as any)}>
-        <View style={styles.yarnHeader}>
-          <View
-            style={[
-              styles.colorSwatch,
-              {
-                backgroundColor: yarn.colorHex || theme.colors.muted,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          />
-          <View style={styles.yarnInfo}>
-            <Text style={[styles.yarnName, { color: theme.colors.text }]}>{yarn.name}</Text>
-            {yarn.brand ? (
-              <Text style={[styles.yarnBrand, { color: theme.colors.textSecondary }]}>
-                {yarn.brand} · {yarn.color}
-              </Text>
-            ) : (
-              <Text style={[styles.yarnBrand, { color: theme.colors.textSecondary }]}>
-                {yarn.color}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.yarnMeta}>
-          <YarnMeta label="Weight" value={yarn.weightCategory} theme={theme} />
-          <YarnMeta
-            label="Skeins"
-            value={`${available}/${yarn.skeinsOwned}`}
-            theme={theme}
-            highlight={available === 0}
-          />
-          <YarnMeta label="Meters" value={Math.round(totalMeters).toString()} theme={theme} />
-        </View>
-
-        {yarn.skeinsReserved > 0 && (
-          <View style={[styles.reservedBadge, { backgroundColor: theme.colors.accentMuted }]}>
-            <Text style={{ color: theme.colors.accent, fontSize: 12, fontWeight: '600' }}>
-              {yarn.skeinsReserved} reserved for projects
+    <TouchableOpacity 
+        onPress={() => router.push(`/patterns/stash/${yarn.id}` as any)}
+        activeOpacity={0.7}
+        style={[styles.yarnCard, { backgroundColor: theme.colors.surface }]}
+    >
+        <View style={[styles.yarnSwatch, { backgroundColor: yarn.colorHex || theme.colors.muted }]} />
+        
+        <View style={styles.yarnContent}>
+            <View style={styles.yarnHeader}>
+                <Text style={[styles.yarnName, { color: theme.colors.text }]} numberOfLines={1}>{yarn.name}</Text>
+                <View style={[styles.badge, { backgroundColor: available > 0 ? theme.colors.surfaceAlt : theme.colors.cardMuted }]}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: available > 0 ? theme.colors.text : theme.colors.muted }}>
+                        {available}/{yarn.skeinsOwned}
+                    </Text>
+                </View>
+            </View>
+            
+            <Text style={[styles.yarnBrand, { color: theme.colors.textSecondary }]}>
+                {yarn.brand ? `${yarn.brand} · ` : ''}{yarn.color}
             </Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    </Card>
-  );
-}
-
-function YarnMeta({
-  label,
-  value,
-  theme,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  theme: ReturnType<typeof useTheme>;
-  highlight?: boolean;
-}) {
-  return (
-    <View style={styles.yarnMetaItem}>
-      <Text style={{ color: theme.colors.muted, fontSize: 11, letterSpacing: 0.3 }}>{label}</Text>
-      <Text
-        style={{
-          color: highlight ? theme.colors.accent : theme.colors.text,
-          fontSize: 14,
-          fontWeight: '600',
-        }}>
-        {value}
-      </Text>
-    </View>
+            
+            <View style={styles.yarnMetaRow}>
+                <Text style={[styles.yarnMeta, { color: theme.colors.muted }]}>{yarn.weightCategory}</Text>
+                {yarn.skeinsReserved > 0 && (
+                    <Text style={{ color: theme.colors.accent, fontSize: 12, fontWeight: '600' }}>
+                        {yarn.skeinsReserved} reserved
+                    </Text>
+                )}
+            </View>
+        </View>
+    </TouchableOpacity>
   );
 }
 
@@ -341,7 +289,7 @@ function EstimatorField({
 }) {
   return (
     <View style={{ flex: 1 }}>
-      <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 4 }}>{label}</Text>
+      <Text style={{ color: theme.colors.textSecondary, fontSize: 11, marginBottom: 4 }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -349,7 +297,6 @@ function EstimatorField({
         style={[
           styles.estimatorInput,
           {
-            borderColor: theme.colors.border,
             backgroundColor: theme.colors.surfaceAlt,
             color: theme.colors.text,
           },
@@ -385,137 +332,142 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
+  },
+  headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
   },
   eyebrow: {
-    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 4,
     letterSpacing: 1,
-    fontSize: 12,
-    marginBottom: 6,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 16,
+    fontSize: 32,
+    fontWeight: '800',
   },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   statCard: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    gap: 4,
+    borderRadius: 20,
+    padding: 16,
+    justifyContent: 'center',
   },
   searchField: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 12,
     marginBottom: 16,
   },
   searchInput: {
     fontSize: 16,
-    paddingVertical: 6,
+    flex: 1,
   },
   filterRow: {
-    marginBottom: 16,
-  },
-  filterLabel: {
-    fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
     marginBottom: 8,
   },
   chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    paddingRight: 16,
     gap: 8,
   },
   chip: {
     borderWidth: 1,
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
   },
   addButton: {
-    paddingVertical: 14,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  addButtonText: {
-    color: '#07080c',
-    fontWeight: '700',
-    fontSize: 16,
+    justifyContent: 'center',
   },
   yarnCard: {
     marginBottom: 12,
+    borderRadius: 24,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  yarnSwatch: {
+      width: 64,
+      height: 64,
+      borderRadius: 18,
+  },
+  yarnContent: {
+      flex: 1,
+      justifyContent: 'center',
   },
   yarnHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  colorSwatch: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginRight: 12,
-  },
-  yarnInfo: {
-    flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
   },
   yarnName: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
+      fontSize: 16,
+      fontWeight: '700',
+      flex: 1,
+      marginRight: 8,
+  },
+  badge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
   },
   yarnBrand: {
-    fontSize: 14,
+      fontSize: 13,
+      marginBottom: 6,
+  },
+  yarnMetaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
   },
   yarnMeta: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
+      fontSize: 12,
+      fontWeight: '600',
   },
-  yarnMetaItem: {
-    flex: 1,
-    gap: 4,
+  estimatorCard: {
+      marginTop: 24,
+      borderRadius: 24,
+      padding: 20,
   },
-  reservedBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  emptyButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    alignItems: 'center',
+  cardTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: 4,
   },
   estimatorRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   estimatorInput: {
-    borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  estimatorResult: {
+      padding: 16,
+      borderRadius: 16,
+      alignItems: 'center',
   },
 });
-
-

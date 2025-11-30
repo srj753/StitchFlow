@@ -126,6 +126,12 @@ function RootLayoutNav() {
           }}
         />
         <Tabs.Screen
+          name="community/publish"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="settings/index"
           options={{
             title: 'Settings',

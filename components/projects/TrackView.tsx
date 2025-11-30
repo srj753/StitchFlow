@@ -1,19 +1,19 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
-import { Card } from '@/components/Card';
 import { Counter } from '@/components/counters/Counter';
 import { JournalEntry } from '@/components/journal/JournalEntry';
 import { PhotoLightbox } from '@/components/photos/PhotoLightbox';
@@ -224,95 +224,97 @@ export function TrackView({ project }: TrackViewProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Card
-          title="Status"
-          subtitle={project.status === 'active' ? 'In progress' : project.status === 'paused' ? 'Paused' : 'Finished'}
-          style={styles.section}>
-          <View style={styles.metricRow}>
-            <Metric 
-              label={rowCounter?.label ?? 'Rows'} 
-              value={`${rowCounter?.currentValue ?? 0}${rowCounter?.targetValue ? ` / ${rowCounter.targetValue}` : ''}`} 
-            />
-            <Metric
-              label="Height"
-              value={`${project.currentHeightInches.toFixed(1)}${project.targetHeightInches ? ` / ${project.targetHeightInches}` : ''} in`}
-            />
-          </View>
-          
-          {/* Status Controls */}
-          <View style={styles.statusControls}>
-            <TouchableOpacity
-              onPress={() => {
-                const newStatus = project.status === 'active' ? 'paused' : 'active';
-                updateProjectStatus(project.id, newStatus);
-                showSuccess(`Project ${newStatus === 'paused' ? 'paused' : 'resumed'}`);
-              }}
-              style={[
-                styles.statusButton,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: project.status === 'paused' ? theme.colors.accentMuted : theme.colors.surfaceAlt,
-                },
-              ]}>
-              <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
-                {project.status === 'paused' ? 'Resume' : 'Pause'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                updateProjectStatus(project.id, 'finished');
-                showSuccess('Project marked as finished!');
-              }}
-              disabled={project.status === 'finished'}
-              style={[
-                styles.statusButton,
-                {
-                  borderColor: project.status === 'finished' ? theme.colors.border : theme.colors.accent,
-                  backgroundColor: project.status === 'finished' ? theme.colors.surfaceAlt : theme.colors.accentMuted,
-                  opacity: project.status === 'finished' ? 0.5 : 1,
-                },
-              ]}>
-              <Text style={{ 
-                color: project.status === 'finished' ? theme.colors.textSecondary : theme.colors.accent, 
-                fontWeight: '600' 
-              }}>
-                {project.status === 'finished' ? 'Finished' : 'Mark Finished'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          {project.status === 'finished' && (
-            <TouchableOpacity
-                onPress={handlePublish}
-                style={[
-                    styles.publishButton,
-                    {
-                        backgroundColor: theme.colors.accent,
-                    },
-                ]}
-            >
-                <Text style={styles.publishButtonText}>Share to Community</Text>
-            </TouchableOpacity>
-          )}
+      {/* Changed ScrollView to View to avoid nesting issues, relying on parent Screen scroll */}
+      {/* But wait, if parent scrolls, the content inside must not be scrollable or conflicting */}
+      {/* However, to ensure proper layout, we keep it simple. Screen handles scroll. */}
+      {/* We just render content. */}
+      
+      <View style={styles.content}>
+        
+        {/* Hero Dashboard Card */}
+        <View style={styles.heroCardContainer}>
+             <View style={[styles.heroCard, { backgroundColor: theme.colors.surface }]}>
+                <LinearGradient
+                   colors={[theme.colors.surface, theme.colors.surfaceAlt]}
+                   style={StyleSheet.absoluteFill}
+                />
+                
+                <View style={styles.heroHeader}>
+                    <View style={styles.statusBadge}>
+                        <FontAwesome name={project.status === 'active' ? 'play' : 'pause'} size={10} color={theme.colors.accent} />
+                        <Text style={[styles.statusText, { color: theme.colors.accent }]}>
+                            {project.status === 'active' ? 'IN PROGRESS' : project.status.toUpperCase()}
+                        </Text>
+                    </View>
+                    <View style={{flex: 1}} />
+                </View>
 
-          {completion !== undefined ? (
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor: theme.colors.accent,
-                    width: `${completion}%`,
-                  },
-                ]}
-              />
-            </View>
-          ) : null}
-        </Card>
+                <View style={styles.heroMetrics}>
+                    <View style={styles.metricColumn}>
+                        <Text style={[styles.metricLabel, { color: theme.colors.muted }]}>ROWS</Text>
+                        <Text style={[styles.metricValue, { color: theme.colors.text }]}>
+                            {rowCounter?.currentValue ?? 0}
+                            <Text style={{ fontSize: 16, color: theme.colors.textSecondary }}>
+                                {rowCounter?.targetValue ? ` / ${rowCounter.targetValue}` : ''}
+                            </Text>
+                        </Text>
+                    </View>
+                     <View style={[styles.metricColumn, { alignItems: 'flex-end' }]}>
+                        <Text style={[styles.metricLabel, { color: theme.colors.muted }]}>COMPLETION</Text>
+                        <Text style={[styles.metricValue, { color: theme.colors.text }]}>
+                            {completion ? Math.round(completion) : 0}%
+                        </Text>
+                    </View>
+                </View>
+                
+                {completion !== undefined && (
+                    <View style={styles.heroProgressTrack}>
+                        <View 
+                            style={[
+                                styles.heroProgressFill, 
+                                { width: `${completion}%`, backgroundColor: theme.colors.accent }
+                            ]} 
+                        />
+                    </View>
+                )}
+                
+                <View style={styles.heroActions}>
+                     <TouchableOpacity
+                        onPress={() => {
+                            const newStatus = project.status === 'active' ? 'paused' : 'active';
+                            updateProjectStatus(project.id, newStatus);
+                        }}
+                        style={[styles.heroButton, { backgroundColor: theme.colors.surfaceAlt }]}
+                     >
+                        <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
+                            {project.status === 'active' ? 'Pause' : 'Resume'}
+                        </Text>
+                     </TouchableOpacity>
+                     
+                     {project.status !== 'finished' && (
+                        <TouchableOpacity
+                             onPress={() => updateProjectStatus(project.id, 'finished')}
+                             style={[styles.heroButton, { backgroundColor: theme.colors.surfaceAlt }]}
+                        >
+                             <Text style={{ color: theme.colors.textSecondary, fontWeight: '600' }}>Finish</Text>
+                        </TouchableOpacity>
+                     )}
+                     
+                     {project.status === 'finished' && (
+                         <TouchableOpacity
+                             onPress={handlePublish}
+                             style={[styles.heroButton, { backgroundColor: theme.colors.accent }]}
+                         >
+                              <Text style={{ color: '#000', fontWeight: '700' }}>Share</Text>
+                         </TouchableOpacity>
+                     )}
+                </View>
+             </View>
+        </View>
 
         {/* Counters Section */}
         <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>COUNTERS</Text>
           {project.counters.map((counter) => (
             <Counter
               key={counter.id}
@@ -338,20 +340,6 @@ export function TrackView({ project }: TrackViewProps) {
           ))}
 
           <TouchableOpacity
-            onPress={() => Alert.alert('Voice control', voiceStub.message)}
-            style={[
-              styles.voiceStub,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
-              },
-            ]}>
-            <Text style={{ color: theme.colors.textSecondary }}>
-              🎙 Voice control (coming soon)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             onPress={() => {
               addCounter(project.id, {
                 type: 'custom',
@@ -367,85 +355,81 @@ export function TrackView({ project }: TrackViewProps) {
                 backgroundColor: theme.colors.surfaceAlt,
               },
             ]}>
+            <FontAwesome name="plus" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
             <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
-              + Add counter
+              Add Counter
             </Text>
           </TouchableOpacity>
         </View>
 
-        <Card title="Notes" subtitle="Split permanent changes vs. progress logs" style={styles.section}>
-          <View style={styles.notesTabs}>
-            {['pattern', 'progress'].map((tab) => {
-              const selected = activeNotesTab === tab;
-              const label = tab === 'pattern' ? 'Pattern changes' : 'Progress notes';
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => setActiveNotesTab(tab as 'pattern' | 'progress')}
-                  style={[
-                    styles.notesTab,
-                    {
-                      borderColor: selected ? theme.colors.accent : theme.colors.border,
-                      backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
-                    },
-                  ]}>
-                  <Text
-                    style={{
-                      color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                      fontWeight: '600',
-                    }}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {activeNotesTab === 'pattern' ? (
-            <TextInput
-              multiline
-              numberOfLines={6}
-              value={patternNotesDraft}
-              onChangeText={setPatternNotesDraft}
-              onBlur={handleSavePatternNotes}
-              placeholder="Document stitch substitutions, sizing tweaks, etc."
-              placeholderTextColor={theme.colors.muted}
-              style={[
-                styles.textArea,
-                {
-                  borderColor: theme.colors.border,
-                  color: theme.colors.text,
-                },
-              ]}
-            />
-          ) : (
-            <TextInput
-              multiline
-              numberOfLines={6}
-              value={progressNotesDraft}
-              onChangeText={setProgressNotesDraft}
-              onBlur={handleSaveProgressNotes}
-              placeholder="Row checkpoints, reminders, repeat counts..."
-              placeholderTextColor={theme.colors.muted}
-              style={[
-                styles.textArea,
-                {
-                  borderColor: theme.colors.border,
-                  color: theme.colors.text,
-                },
-              ]}
-            />
-          )}
-        </Card>
+        <View style={styles.section}>
+           <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>NOTES</Text>
+           <View style={[styles.notesContainer, { backgroundColor: theme.colors.surface }]}>
+               <View style={styles.notesTabs}>
+                    {['pattern', 'progress'].map((tab) => {
+                    const selected = activeNotesTab === tab;
+                    const label = tab === 'pattern' ? 'Pattern' : 'Progress';
+                    return (
+                        <TouchableOpacity
+                        key={tab}
+                        onPress={() => setActiveNotesTab(tab as 'pattern' | 'progress')}
+                        style={[
+                            styles.notesTab,
+                            {
+                            borderBottomWidth: 2,
+                            borderColor: selected ? theme.colors.accent : 'transparent',
+                            },
+                        ]}>
+                        <Text
+                            style={{
+                            color: selected ? theme.colors.accent : theme.colors.textSecondary,
+                            fontWeight: '700',
+                            fontSize: 14,
+                            }}>
+                            {label}
+                        </Text>
+                        </TouchableOpacity>
+                    );
+                    })}
+                </View>
+                <TextInput
+                    multiline
+                    numberOfLines={6}
+                    value={activeNotesTab === 'pattern' ? patternNotesDraft : progressNotesDraft}
+                    onChangeText={activeNotesTab === 'pattern' ? setPatternNotesDraft : setProgressNotesDraft}
+                    onBlur={activeNotesTab === 'pattern' ? handleSavePatternNotes : handleSaveProgressNotes}
+                    placeholder={activeNotesTab === 'pattern' ? "Stitch substitutions, sizing tweaks..." : "Row checkpoints, reminders..."}
+                    placeholderTextColor={theme.colors.muted}
+                    style={[
+                        styles.textArea,
+                        {
+                        color: theme.colors.text,
+                        },
+                    ]}
+                />
+           </View>
+        </View>
 
-        <Card title="Yarn & stash" subtitle="Reserve skeins" style={styles.section}>
-          <Text style={{ color: theme.colors.textSecondary, marginBottom: 8 }}>
-            Reserved {totalReserved.toFixed(1)} skeins · {totalAvailable.toFixed(1)} skeins available in stash
-          </Text>
+        {/* Yarn & Stash Section - Redesigned */}
+        <View style={styles.section}>
+           <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>YARN & MATERIALS</Text>
+              <TouchableOpacity 
+                 onPress={handleOpenYarnModal} 
+                 disabled={stashEmpty || !canLinkYarn}
+                 style={{ opacity: stashEmpty || !canLinkYarn ? 0.5 : 1 }}
+              >
+                  <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Link Yarn</Text>
+              </TouchableOpacity>
+           </View>
 
           {project.linkedYarns.length === 0 ? (
-            <Text style={{ color: theme.colors.textSecondary, marginBottom: 12 }}>
-              No yarn linked yet. Connect stash items so counters and estimates stay in sync.
-            </Text>
+             <View style={[styles.emptyStateCard, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+                 <FontAwesome name="inbox" size={24} color={theme.colors.muted} style={{ marginBottom: 8 }} />
+                 <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
+                    Link yarn from your stash to track usage.
+                 </Text>
+             </View>
           ) : (
             <View style={styles.yarnList}>
               {project.linkedYarns.map((link) => {
@@ -460,8 +444,8 @@ export function TrackView({ project }: TrackViewProps) {
                     style={[
                       styles.yarnRow,
                       {
+                        backgroundColor: theme.colors.surface,
                         borderColor: theme.colors.border,
-                        backgroundColor: theme.colors.surfaceAlt,
                       },
                     ]}>
                     <View style={styles.yarnMetaRow}>
@@ -479,87 +463,55 @@ export function TrackView({ project }: TrackViewProps) {
                           {yarn?.name ?? 'Missing yarn'}
                         </Text>
                         <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-                          {(yarn?.brand ?? 'Unknown brand') + ' · ' + (yarn?.color ?? 'Color n/a')}
-                        </Text>
-                        <Text style={{ color: theme.colors.muted, fontSize: 12 }}>
-                          Reserved {link.skeinsUsed} of {yarn?.skeinsOwned ?? '?'} skeins
+                          {(yarn?.brand ?? 'Unknown brand')}
                         </Text>
                       </View>
+                      <TouchableOpacity onPress={() => handleRemoveLink(link.id)} style={styles.iconButton}>
+                          <FontAwesome name="trash-o" size={18} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
                     </View>
-                    <View style={styles.yarnControls}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: theme.colors.muted, fontSize: 12, marginBottom: 4 }}>
-                          Adjust skeins
-                        </Text>
-                        <TextInput
+                    
+                    {/* Skein Control */}
+                    <View style={[styles.skeinControl, { backgroundColor: theme.colors.surfaceAlt }]}>
+                         <Text style={{ color: theme.colors.textSecondary, fontSize: 12, flex: 1 }}>Used in project:</Text>
+                         <TextInput
                           value={String(link.skeinsUsed)}
                           onChangeText={(text) => handleLinkedAmountChange(link.id, text)}
                           keyboardType="numeric"
                           style={[
-                            styles.yarnAmountInput,
+                            styles.skeinInput,
                             {
-                              borderColor: theme.colors.border,
-                              backgroundColor: theme.colors.surface,
                               color: theme.colors.text,
                             },
                           ]}
                         />
-                        <Text style={{ color: theme.colors.muted, fontSize: 12, marginTop: 4 }}>
-                          {available.toFixed(1)} skeins available
-                        </Text>
-                      </View>
-                      <TouchableOpacity onPress={() => handleRemoveLink(link.id)} style={styles.removeYarnButton}>
-                        <Text style={{ color: theme.colors.textSecondary }}>Remove</Text>
-                      </TouchableOpacity>
+                        <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>skeins</Text>
                     </View>
                   </View>
                 );
               })}
             </View>
           )}
+        </View>
 
-          <TouchableOpacity
-            onPress={handleOpenYarnModal}
-            disabled={stashEmpty || !canLinkYarn}
-            style={[
-              styles.linkYarnButton,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
-                opacity: stashEmpty || !canLinkYarn ? 0.5 : 1,
-              },
-            ]}>
-            <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
-              {stashEmpty
-                ? 'Add yarn to stash first'
-                : canLinkYarn
-                  ? 'Link yarn from stash'
-                  : 'All stash yarns linked'}
-            </Text>
-          </TouchableOpacity>
-        </Card>
-
-        <Card title="Photos" subtitle="Document progress" style={styles.section}>
-          <View style={{ position: 'relative' }}>
-            <TouchableOpacity
-              onPress={handleAddPhoto}
-              disabled={isLoadingPhoto}
-              style={[
-                styles.addPhotoButton,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surfaceAlt,
-                  opacity: isLoadingPhoto ? 0.6 : 1,
-                },
-              ]}>
-              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>+ Add photo</Text>
-            </TouchableOpacity>
-            {isLoadingPhoto && <LoadingSpinner overlay />}
-          </View>
+        {/* Photos Section - Redesigned */}
+        <View style={styles.section}>
+           <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>PHOTOS</Text>
+              <TouchableOpacity onPress={handleAddPhoto} disabled={isLoadingPhoto}>
+                  <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Add Photo</Text>
+              </TouchableOpacity>
+           </View>
+          
+          {isLoadingPhoto && <LoadingSpinner overlay />}
+          
           {project.photos.length === 0 ? (
-            <Text style={{ color: theme.colors.textSecondary }}>
-              No photos yet. Snap your yarn palette or project milestones.
-            </Text>
+            <View style={[styles.emptyStateCard, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+                 <FontAwesome name="camera" size={24} color={theme.colors.muted} style={{ marginBottom: 8 }} />
+                 <Text style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
+                    Document your progress with photos.
+                 </Text>
+             </View>
           ) : (
             <ScrollView
               horizontal
@@ -571,93 +523,84 @@ export function TrackView({ project }: TrackViewProps) {
                     onPress={() => {
                       setLightboxIndex(index);
                       setLightboxVisible(true);
-                    }}>
+                    }}
+                    style={[styles.photoContainer, { borderColor: theme.colors.border }]}
+                  >
                     <Image source={{ uri }} style={styles.photoImage} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleRemovePhoto(uri)}
-                    style={[
-                      styles.removePhotoButton,
-                      { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border },
-                    ]}>
-                    <Text style={{ color: theme.colors.textSecondary }}>Remove</Text>
+                    <TouchableOpacity
+                        onPress={() => handleRemovePhoto(uri)}
+                        style={styles.photoDeleteBadge}
+                    >
+                        <FontAwesome name="times" size={12} color="#fff" />
+                    </TouchableOpacity>
                   </TouchableOpacity>
                 </View>
               ))}
             </ScrollView>
           )}
-        </Card>
+        </View>
 
-        {/* Journal/Timeline Section */}
-        <Card title="Project journal" subtitle="Track progress & milestones" style={styles.section}>
-          <View style={styles.addJournalForm}>
-            <TextInput
-              value={journalText}
-              onChangeText={setJournalText}
-              placeholder="Add a note or milestone..."
-              placeholderTextColor={theme.colors.muted}
-              multiline
-              style={[
-                styles.journalInput,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surfaceAlt,
-                  color: theme.colors.text,
-                },
-              ]}
-            />
-            <View style={styles.journalButtons}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (journalText.trim()) {
-                    addJournalEntry(project.id, {
-                      type: 'note',
-                      text: journalText.trim(),
-                    });
-                    setJournalText('');
-                    showSuccess('Note added to journal');
-                  }
-                }}
+        {/* Journal Section - Redesigned */}
+        <View style={[styles.section, { marginBottom: 40 }]}>
+           <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>JOURNAL</Text>
+           
+           {/* Add Note Input */}
+           <View style={[styles.journalInputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <TextInput
+                value={journalText}
+                onChangeText={setJournalText}
+                placeholder="Log a thought or milestone..."
+                placeholderTextColor={theme.colors.muted}
+                multiline
                 style={[
-                  styles.journalButton,
-                  {
-                    backgroundColor: theme.colors.accent,
-                  },
-                ]}>
-                <Text style={styles.journalButtonText}>Add note</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  const currentCounters = project.counters;
-                  const rowCounter = currentCounters.find((c) => c.type === 'row');
-                  addJournalEntry(project.id, {
-                    type: 'milestone',
-                    text: journalText.trim() || 'Milestone reached!',
-                    metadata: {
-                      roundsCompleted: rowCounter?.currentValue,
-                      heightAchieved: project.currentHeightInches,
+                    styles.journalInput,
+                    {
+                    color: theme.colors.text,
                     },
-                  });
-                  setJournalText('');
-                  showSuccess('Milestone logged!');
-                }}
-                style={[
-                  styles.journalButton,
-                  {
-                    borderColor: theme.colors.border,
-                    backgroundColor: theme.colors.surfaceAlt,
-                  },
-                ]}>
-                <Text style={{ color: theme.colors.text }}>Milestone</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+                ]}
+                />
+                <View style={styles.journalActionRow}>
+                    <TouchableOpacity
+                        onPress={() => {
+                        const currentCounters = project.counters;
+                        const rowCounter = currentCounters.find((c) => c.type === 'row');
+                        addJournalEntry(project.id, {
+                            type: 'milestone',
+                            text: journalText.trim() || 'Milestone reached!',
+                            metadata: {
+                            roundsCompleted: rowCounter?.currentValue,
+                            heightAchieved: project.currentHeightInches,
+                            },
+                        });
+                        setJournalText('');
+                        showSuccess('Milestone logged!');
+                        }}
+                        style={styles.journalIconAction}
+                    >
+                        <FontAwesome name="flag-o" size={16} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                    
+                    <View style={{ flex: 1 }} />
+                    
+                    <TouchableOpacity
+                        onPress={() => {
+                        if (journalText.trim()) {
+                            addJournalEntry(project.id, {
+                            type: 'note',
+                            text: journalText.trim(),
+                            });
+                            setJournalText('');
+                            showSuccess('Note added');
+                        }
+                        }}
+                        style={[styles.postButton, { backgroundColor: theme.colors.surfaceAlt }]}
+                    >
+                        <Text style={{ color: theme.colors.text, fontWeight: '600', fontSize: 12 }}>Post</Text>
+                    </TouchableOpacity>
+                </View>
+           </View>
 
-          {project.journal.length === 0 ? (
-            <Text style={{ color: theme.colors.textSecondary, marginTop: 12 }}>
-              No journal entries yet. Add notes or milestones as you work!
-            </Text>
-          ) : (
+          {project.journal.length > 0 && (
             <View style={styles.journalList}>
               {project.journal.map((entry) => (
                 <JournalEntry
@@ -665,15 +608,16 @@ export function TrackView({ project }: TrackViewProps) {
                   entry={entry}
                   onDelete={() => {
                     deleteJournalEntry(project.id, entry.id);
-                    showSuccess('Journal entry removed');
+                    showSuccess('Entry removed');
                   }}
                 />
               ))}
             </View>
           )}
-        </Card>
-      </ScrollView>
+        </View>
+      </View>
 
+      {/* Modals remain the same */}
       <Modal visible={showYarnModal} transparent animationType="fade" onRequestClose={handleCloseYarnModal}>
         <View style={styles.modalOverlay}>
           <View
@@ -809,72 +753,132 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 24,
+    // Removed horizontal padding to let content go edge-to-edge if desired, 
+    // but generally we want padding unless the children are full-width cards.
+    // Given the user complaint about "divs so padded", likely they meant the extra indentation.
+    // The parent Screen typically adds horizontal padding (24).
+    // If we want full bleed, we'd negative margin it, but here we likely just don't want EXTRA padding.
+    // So removing paddingHorizontal: 16 helps.
   },
-  metricRow: {
+  sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+  },
+  sectionTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1,
+      marginBottom: 8,
+  },
+  heroCardContainer: {
+    marginBottom: 24,
+    // Removed paddingHorizontal here too
+  },
+  heroCard: {
+    borderRadius: 24,
+    padding: 20,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    gap: 16,
+  },
+  heroHeader: {
     flexDirection: 'row',
-    marginTop: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  statusControls: {
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  heroMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  metricColumn: {
+    gap: 4,
+  },
+  metricLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  metricValue: {
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  heroProgressTrack: {
+    height: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginVertical: 8,
+  },
+  heroProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  heroActions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 16,
   },
-  statusButton: {
+  heroButton: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  publishButton: {
-    marginTop: 16,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
-  },
-  publishButtonText: {
-      color: '#07080c',
-      fontWeight: '700',
+    justifyContent: 'center',
   },
   metric: {
     flex: 1,
     marginRight: 16,
   },
-  progressTrack: {
-    marginTop: 18,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: '#1b2032',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
+  notesContainer: {
+      borderRadius: 24,
+      padding: 20,
   },
   textArea: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 14,
+    padding: 12,
     minHeight: 120,
     textAlignVertical: 'top',
+    fontSize: 16,
   },
   notesTabs: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 16,
     marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    paddingBottom: 0,
   },
   notesTab: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 999,
     paddingVertical: 8,
-    alignItems: 'center',
+    paddingHorizontal: 4,
   },
   addCounterButton: {
     borderWidth: 1,
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
     marginBottom: 16,
   },
   voiceStub: {
@@ -883,45 +887,41 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  addJournalForm: {
-    marginBottom: 16,
+  journalInputContainer: {
+      borderRadius: 24,
+      padding: 20,
+      borderWidth: 1,
+      marginBottom: 16,
   },
   journalInput: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    minHeight: 80,
+    fontSize: 16,
+    minHeight: 60,
     textAlignVertical: 'top',
     marginBottom: 12,
   },
-  journalButtons: {
-    flexDirection: 'row',
-    gap: 12,
+  journalActionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
   },
-  journalButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
+  journalIconAction: {
+      padding: 8,
   },
-  journalButtonText: {
-    color: '#07080c',
-    fontWeight: '700',
+  postButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
   },
   journalList: {
-    marginTop: 16,
+    marginTop: 8,
   },
   yarnList: {
     gap: 12,
-    marginBottom: 12,
   },
   yarnRow: {
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 24,
+    padding: 20,
     gap: 12,
   },
   yarnMetaRow: {
@@ -930,39 +930,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   yarnSwatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     borderWidth: 1,
   },
   yarnName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  yarnControls: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 12,
+  iconButton: {
+      padding: 8,
   },
-  yarnAmountInput: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 16,
+  skeinControl: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 12,
+      marginTop: 4,
   },
-  removeYarnButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
+  skeinInput: {
+      width: 40,
+      textAlign: 'center',
+      fontSize: 14,
+      fontWeight: '700',
+      padding: 0, // reset
   },
-  linkYarnButton: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
+  emptyStateCard: {
+      padding: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderStyle: 'dashed',
   },
   addPhotoButton: {
     borderWidth: 1,
@@ -975,20 +976,29 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   photoItem: {
-    width: 140,
+    width: 120,
     marginRight: 12,
   },
-  photoImage: {
-    width: 140,
-    height: 140,
-    borderRadius: 16,
-    marginBottom: 8,
+  photoContainer: {
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: 1,
+      position: 'relative',
   },
-  removePhotoButton: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 6,
-    alignItems: 'center',
+  photoImage: {
+    width: 120,
+    height: 120,
+  },
+  photoDeleteBadge: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
   },
   modalOverlay: {
     flex: 1,

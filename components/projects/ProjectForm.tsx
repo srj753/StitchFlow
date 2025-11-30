@@ -1,6 +1,7 @@
 
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useTheme } from '@/hooks/useTheme';
 import { Project, ProjectInput } from '@/types/project';
@@ -31,9 +32,9 @@ type ProjectFormProps = {
 };
 
 const patternSourceOptions: Array<{ label: string; value: Project['patternSourceType'] }> = [
-  { label: 'External link', value: 'external' },
+  { label: 'Link', value: 'external' },
   { label: 'Built-in', value: 'built-in' },
-  { label: 'My notes', value: 'my-pattern' },
+  { label: 'Notes', value: 'my-pattern' },
 ];
 
 const yarnWeightOptions = ['Lace', 'Sport', 'DK', 'Worsted', 'Bulky', 'Super bulky'];
@@ -171,42 +172,40 @@ export function ProjectForm({
 
   return (
     <View>
-      <Section title="Basics" description="Name it clearly and log where the pattern lives.">
+      <Section title="DETAILS" first>
         <FormField
-          label="Project name*"
+          label="Project Name"
           value={name}
           onChangeText={setName}
           themeColor={theme.colors}
           autoFocus
-          placeholder="e.g. Aurora plushie"
+          placeholder="e.g. Cozy Blanket"
         />
         <FormField
-          label="Pattern or inspiration"
+          label="Pattern / Inspiration"
           value={patternName}
           onChangeText={setPatternName}
           themeColor={theme.colors}
-          placeholder="Blog post, book, or your own design"
+          placeholder="Pattern name or designer"
         />
-        <Text style={[styles.helperText, { color: theme.colors.muted }]}>Pattern source</Text>
-        <View style={styles.row}>
-          {patternSourceOptions.map((option, index) => {
+        
+        <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>PATTERN SOURCE</Text>
+        <View style={[styles.segmentedControl, { backgroundColor: theme.colors.surfaceAlt }]}>
+          {patternSourceOptions.map((option) => {
             const selected = patternSource === option.value;
             return (
               <TouchableOpacity
                 key={option.value}
                 onPress={() => setPatternSource(option.value)}
                 style={[
-                  styles.chip,
-                  {
-                    borderColor: selected ? theme.colors.accent : theme.colors.border,
-                    backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
-                    marginRight: index === patternSourceOptions.length - 1 ? 0 : 8,
-                  },
+                  styles.segment,
+                  selected && { backgroundColor: theme.colors.card, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
                 ]}>
                 <Text
                   style={{
-                    color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                    fontWeight: '600',
+                    color: selected ? theme.colors.text : theme.colors.textSecondary,
+                    fontWeight: selected ? '600' : '400',
+                    fontSize: 13,
                   }}>
                   {option.label}
                 </Text>
@@ -214,21 +213,20 @@ export function ProjectForm({
             );
           })}
         </View>
-        {patternSource !== 'my-pattern' ? (
+        
+        {patternSource !== 'my-pattern' && (
           <FormField
-            label="Reference link"
+            label="Link"
             value={referenceLink}
             onChangeText={setReferenceLink}
             themeColor={theme.colors}
-            placeholder="https://example.com/pattern"
+            placeholder="https://..."
+            style={{ marginTop: 16 }}
           />
-        ) : null}
+        )}
       </Section>
 
-      <Section
-        title="Palette & materials"
-        description="Pick yarn combos and specs now so cards feel alive.">
-        <Text style={[styles.helperText, { color: theme.colors.muted }]}>Palette mode</Text>
+      <Section title="PALETTE">
         <View style={styles.row}>
           {['preset', 'custom'].map((mode) => {
             const selected = paletteMode === mode;
@@ -248,8 +246,9 @@ export function ProjectForm({
                   style={{
                     color: selected ? theme.colors.accent : theme.colors.textSecondary,
                     fontWeight: '600',
+                    fontSize: 13,
                   }}>
-                  {mode === 'preset' ? 'Curated sets' : 'Custom colors'}
+                  {mode === 'preset' ? 'Presets' : 'Custom'}
                 </Text>
               </TouchableOpacity>
             );
@@ -257,7 +256,7 @@ export function ProjectForm({
         </View>
 
         {paletteMode === 'preset' ? (
-          <View style={styles.paletteRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.paletteRow}>
             {palettePresets.map((preset, index) => {
               const selected = paletteIndex === index;
               return (
@@ -279,17 +278,17 @@ export function ProjectForm({
                   <Text
                     style={{
                       color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                      fontSize: 13,
+                      fontSize: 12,
+                      fontWeight: '600',
                     }}>
                     {preset.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         ) : (
-          <View>
-            <View style={styles.customPaletteRow}>
+          <View style={styles.customPaletteRow}>
               {customColors.map((color, index) => {
                 const textColor = ensureContrastingText(color);
                 return (
@@ -303,7 +302,7 @@ export function ProjectForm({
                         backgroundColor: color,
                       },
                     ]}>
-                    <Text style={{ color: textColor, fontWeight: '700' }}>{index + 1}</Text>
+                    {/* <Text style={{ color: textColor, fontWeight: '700' }}>{index + 1}</Text> */}
                   </TouchableOpacity>
                 );
               })}
@@ -316,22 +315,20 @@ export function ProjectForm({
                       borderStyle: 'dashed',
                       borderColor: theme.colors.border,
                       backgroundColor: theme.colors.surfaceAlt,
+                      justifyContent: 'center',
+                      alignItems: 'center',
                     },
                   ]}>
-                  <Text style={{ color: theme.colors.textSecondary }}>+</Text>
+                  <FontAwesome name="plus" size={16} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               ) : null}
-            </View>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-              Tap a swatch to open the picker. We’ll store up to 6 colors.
-            </Text>
           </View>
         )}
+      </Section>
 
-        <Text style={[styles.helperText, { color: theme.colors.muted, marginTop: 16 }]}>
-          Yarn weight
-        </Text>
-        <View style={styles.rowWrap}>
+      <Section title="SPECS">
+        <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>YARN WEIGHT</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowWrap}>
           {yarnWeightOptions.map((option) => {
             const selected = yarnWeight === option;
             return (
@@ -344,25 +341,23 @@ export function ProjectForm({
                     borderColor: selected ? theme.colors.accent : theme.colors.border,
                     backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
                     marginRight: 8,
-                    marginBottom: 8,
                   },
                 ]}>
                 <Text
                   style={{
                     color: selected ? theme.colors.accent : theme.colors.textSecondary,
                     fontWeight: '600',
+                    fontSize: 13,
                   }}>
                   {option}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
-        <Text style={[styles.helperText, { color: theme.colors.muted, marginTop: 16 }]}>
-          Hook size (mm)
-        </Text>
-        <View style={styles.rowWrap}>
+        <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary, marginTop: 16 }]}>HOOK SIZE (mm)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowWrap}>
           {hookSizeOptions.map((option) => {
             const selected = hookSize === option;
             return (
@@ -375,35 +370,36 @@ export function ProjectForm({
                     borderColor: selected ? theme.colors.accent : theme.colors.border,
                     backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
                     marginRight: 8,
-                    marginBottom: 8,
                   },
                 ]}>
                 <Text
                   style={{
                     color: selected ? theme.colors.accent : theme.colors.textSecondary,
                     fontWeight: '600',
+                    fontSize: 13,
                   }}>
                   {option}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
+        
         <FormField
-          label="Custom hook size"
-          helper="Type any measurement like 1.75 or 12.0"
+          label="Custom Hook"
           value={hookSize ?? ''}
           onChangeText={setHookSize}
           themeColor={theme.colors}
           keyboardType="decimal-pad"
-          placeholder="e.g. 2.75"
+          placeholder="e.g. 7.0"
+          style={{ marginTop: 12 }}
         />
       </Section>
 
-      <Section title="Goals" description="Optional targets to keep progress satisfying.">
+      <Section title="GOALS">
         <View style={styles.inlineRow}>
           <FormField
-            label="Target height (in)"
+            label="Target Height (in)"
             value={targetHeight}
             onChangeText={setTargetHeight}
             themeColor={theme.colors}
@@ -411,7 +407,7 @@ export function ProjectForm({
             style={styles.inlineField}
           />
           <FormField
-            label="Round goal"
+            label="Round Goal"
             value={roundGoal}
             onChangeText={setRoundGoal}
             themeColor={theme.colors}
@@ -421,24 +417,25 @@ export function ProjectForm({
         </View>
       </Section>
 
-      <Section title="Notes & snippet" description="Reference text you can tweak later.">
+      <Section title="NOTES">
         <FormField
-          label="Pattern snippet"
+          label="Initial Snippet"
           value={snippet}
           onChangeText={setSnippet}
           themeColor={theme.colors}
           multiline
           numberOfLines={4}
-          placeholder="Row 1: ch 2, 6 sc in magic ring..."
+          placeholder="Row 1: ch 2..."
         />
         <FormField
-          label="Project notes"
+          label="Notes"
           value={notes}
           onChangeText={setNotes}
           themeColor={theme.colors}
           multiline
           numberOfLines={4}
-          placeholder="Yarn substitutions, fit adjustments, reminders..."
+          placeholder="Reminders..."
+          style={{ marginTop: 16 }}
         />
       </Section>
 
@@ -448,20 +445,21 @@ export function ProjectForm({
         style={[
           styles.submitButton,
           {
-            backgroundColor: disableSubmit ? theme.colors.cardMuted : theme.colors.accent,
-            opacity: disableSubmit ? 0.6 : 1,
+            backgroundColor: disableSubmit ? theme.colors.surfaceAlt : theme.colors.accent,
+            opacity: disableSubmit ? 0.5 : 1,
           },
         ]}>
         <Text
           style={[
             styles.submitButtonText,
             {
-              color: disableSubmit ? theme.colors.muted : '#07080c',
+              color: disableSubmit ? theme.colors.textSecondary : '#07080c',
             },
           ]}>
           {submitLabel}
         </Text>
       </TouchableOpacity>
+      
       <ColorPickerModal
         visible={showColorPicker}
         initialColor={
@@ -476,30 +474,24 @@ export function ProjectForm({
 
 function Section({
   title,
-  description,
   children,
+  first,
 }: {
   title: string;
-  description?: string;
   children: ReactNode;
+  first?: boolean;
 }) {
   const theme = useTheme();
   return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{title}</Text>
-      {description ? (
-        <Text style={[styles.sectionDescription, { color: theme.colors.textSecondary }]}>
-          {description}
-        </Text>
-      ) : null}
-      <View style={styles.sectionBody}>{children}</View>
+    <View style={[styles.section, !first && { marginTop: 24 }]}>
+      <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>{title}</Text>
+      <View style={[styles.sectionBody, { backgroundColor: theme.colors.surface }]}>{children}</View>
     </View>
   );
 }
 
 type FormFieldProps = {
   label: string;
-  helper?: string;
   value: string;
   onChangeText: (value: string) => void;
   themeColor: ReturnType<typeof useTheme>['colors'];
@@ -513,7 +505,6 @@ type FormFieldProps = {
 
 function FormField({
   label,
-  helper,
   value,
   onChangeText,
   themeColor,
@@ -526,17 +517,17 @@ function FormField({
 }: FormFieldProps) {
   return (
     <View style={[styles.fieldWrapper, style]}>
-      <Text style={[styles.fieldLabel, { color: themeColor.muted }]}>{label}</Text>
-      {helper ? <Text style={[styles.helperText, { color: themeColor.muted }]}>{helper}</Text> : null}
+      <Text style={[styles.fieldLabel, { color: themeColor.textSecondary }]}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         style={[
           styles.textInput,
           {
-            borderColor: themeColor.border,
             backgroundColor: themeColor.surfaceAlt,
             color: themeColor.text,
+            minHeight: multiline ? 80 : 48,
+            paddingTop: multiline ? 12 : 0, // Fix multiline vertical align
           },
         ]}
         placeholder={placeholder}
@@ -545,6 +536,7 @@ function FormField({
         autoFocus={autoFocus}
         multiline={multiline}
         numberOfLines={numberOfLines}
+        textAlignVertical={multiline ? 'top' : 'center'}
       />
     </View>
   );
@@ -552,24 +544,33 @@ function FormField({
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 28,
+    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 11,
     fontWeight: '700',
-    marginBottom: 6,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+    letterSpacing: 1,
+    marginBottom: 8,
+    paddingLeft: 8,
   },
   sectionBody: {
-    marginTop: 12,
+    borderRadius: 20,
+    padding: 16,
   },
-  helperText: {
-    fontSize: 12,
-    letterSpacing: 0.3,
-    marginBottom: 8,
+  fieldWrapper: {
+    marginBottom: 16,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  textInput: {
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    fontSize: 16,
   },
   row: {
     flexDirection: 'row',
@@ -577,52 +578,45 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 4,
+    paddingBottom: 8,
   },
   chip: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   paletteRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
+    paddingRight: 16,
   },
   customPaletteRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 12,
+    marginTop: 8,
   },
   customSwatch: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 12,
     marginBottom: 12,
   },
   paletteCard: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 12,
     marginRight: 12,
-    marginBottom: 12,
-    width: 150,
+    width: 140,
   },
   swatchRow: {
     flexDirection: 'row',
     marginBottom: 8,
   },
   swatch: {
-    width: 22,
-    height: 22,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     marginRight: 6,
   },
   inlineRow: {
@@ -633,28 +627,25 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 8,
   },
-  fieldWrapper: {
-    marginBottom: 16,
+  segmentedControl: {
+      flexDirection: 'row',
+      padding: 4,
+      borderRadius: 12,
+      marginBottom: 8,
   },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+  segment: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+      borderRadius: 8,
   },
   submitButton: {
-    marginTop: 8,
-    borderRadius: 18,
+    marginTop: 24,
+    borderRadius: 20,
     paddingVertical: 16,
     alignItems: 'center',
+    marginBottom: 40,
   },
   submitButtonText: {
     fontSize: 16,

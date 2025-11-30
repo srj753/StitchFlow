@@ -1,24 +1,23 @@
-import { Alert, Modal, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
-import { useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as DocumentPicker from 'expo-document-picker';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Modal, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
-import { Card } from '@/components/Card';
 import { ColorPickerModal } from '@/components/color/ColorPickerModal';
 import { Screen } from '@/components/Screen';
 import { UnitConverter } from '@/components/tools/UnitConverter';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { exportAllData, importData } from '@/lib/dataExport';
-import { useAppearanceStore, ThemeMode } from '@/store/useAppearanceStore';
+import { ThemeMode, useAppearanceStore } from '@/store/useAppearanceStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
 export default function SettingsScreen() {
   const theme = useTheme();
   const { showSuccess, showError } = useToast();
   const { mode, setMode, cycleMode, customAccentColor, setCustomAccentColor } = useAppearanceStore();
-  const { keepScreenAwake, setKeepScreenAwake, voiceHintsEnabled, toggleVoiceHints } =
+  const { keepScreenAwake, setKeepScreenAwake, voiceHintsEnabled, toggleVoiceHints, aiAssistantEnabled, toggleAiAssistant } =
     useSettingsStore();
   const router = useRouter();
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -73,176 +72,169 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Profile & settings</Text>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Make KnotIQ yours</Text>
+        <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>PREFERENCES</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Settings</Text>
         <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-          Account basics, theme controls, device sync, and future premium toggles will live here.
+          Customize your experience and manage your data.
         </Text>
       </View>
 
-      <Card title="Tools" subtitle="Utilities">
-        <TouchableOpacity
-          onPress={() => setShowConverter(true)}
-          style={[
-            styles.toolButton,
-            { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-          ]}>
-          <FontAwesome name="calculator" size={20} color={theme.colors.accent} style={{ marginRight: 12 }} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Unit Converter</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-              Yarn lengths & weights
-            </Text>
-          </View>
-          <FontAwesome name="chevron-right" size={14} color={theme.colors.muted} />
-        </TouchableOpacity>
-      </Card>
-
-      <Card title="Theme" subtitle="Display preference">
-        <View style={styles.themeRow}>
-          {themeOptions.map((option) => {
-            const selected = mode === option.value;
-            return (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => setMode(option.value)}
-                style={[
-                  styles.themeChip,
-                  {
-                    backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
-                    borderColor: selected ? theme.colors.accent : theme.colors.border,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                    fontWeight: '600',
-                  }}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <TouchableOpacity
-          onPress={cycleMode}
-          style={[
-            styles.cycleButton,
-            { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-          ]}>
-          <Text style={{ color: theme.colors.textSecondary }}>Cycle theme</Text>
-        </TouchableOpacity>
-      </Card>
-
-      <Card title="Accent color" subtitle="Customize your app's accent color">
-        <View style={styles.accentColorRow}>
-          <TouchableOpacity
-            onPress={() => setShowColorPicker(true)}
-            style={[
-              styles.accentColorSwatch,
-              {
-                backgroundColor: customAccentColor || theme.colors.accent,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: theme.colors.text, fontWeight: '600', marginBottom: 4 }}>
-              {customAccentColor || 'Default (pink)'}
-            </Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-              Tap to choose a custom color
-            </Text>
-          </View>
-          {customAccentColor && (
-            <TouchableOpacity
-              onPress={() => {
-                setCustomAccentColor(undefined);
-                showSuccess('Reset to default accent color');
-              }}
-              style={[
-                styles.resetButton,
-                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-              ]}>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Reset</Text>
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>APPEARANCE</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.row}>
+                <View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Theme</Text>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</Text>
+                </View>
+                <View style={styles.themeToggleRow}>
+                    {themeOptions.map((option) => {
+                        const selected = mode === option.value;
+                        return (
+                            <TouchableOpacity
+                                key={option.value}
+                                onPress={() => setMode(option.value)}
+                                style={[
+                                    styles.themePill,
+                                    {
+                                        backgroundColor: selected ? theme.colors.accent : theme.colors.surfaceAlt,
+                                    }
+                                ]}
+                            >
+                                <Text style={{ 
+                                    color: selected ? '#000' : theme.colors.textSecondary, 
+                                    fontWeight: selected ? '700' : '400',
+                                    fontSize: 12
+                                }}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity onPress={() => setShowColorPicker(true)} style={styles.row}>
+                <View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Accent Color</Text>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
+                        {customAccentColor ? 'Custom' : 'Default Pink'}
+                    </Text>
+                </View>
+                <View style={[styles.colorSwatch, { backgroundColor: customAccentColor || theme.colors.accent }]} />
             </TouchableOpacity>
-          )}
+            
+            {customAccentColor && (
+                <>
+                    <View style={styles.divider} />
+                    <TouchableOpacity 
+                        onPress={() => {
+                            setCustomAccentColor(undefined);
+                            showSuccess('Reset to default accent color');
+                        }} 
+                        style={styles.row}
+                    >
+                        <Text style={[styles.rowLabel, { color: theme.colors.textSecondary }]}>Reset Accent Color</Text>
+                        <FontAwesome name="undo" size={14} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                </>
+            )}
         </View>
-        <ColorPickerModal
-          visible={showColorPicker}
-          initialColor={customAccentColor || theme.colors.accent}
-          onClose={() => setShowColorPicker(false)}
-          onSelect={(hex) => {
-            setCustomAccentColor(hex);
-            setShowColorPicker(false);
-            showSuccess('Accent color updated');
-          }}
-        />
-      </Card>
+      </View>
 
-      <Card title="Focus helpers" subtitle="Quality-of-life toggles">
-        <View style={[styles.toggleRow, { borderColor: theme.colors.border }]}>
-          <View style={styles.toggleCopy}>
-            <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Keep screen awake</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-              Prevents the display from sleeping while the project screen is open.
-            </Text>
-          </View>
-          <Switch
-            value={keepScreenAwake}
-            onValueChange={setKeepScreenAwake}
-            thumbColor={keepScreenAwake ? theme.colors.accent : theme.colors.border}
-          />
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>TOOLS & FEATURES</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+            <TouchableOpacity onPress={() => setShowConverter(true)} style={styles.row}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="calculator" size={16} color={theme.colors.text} />
+                    </View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Unit Converter</Text>
+                </View>
+                <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.row}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="magic" size={16} color={theme.colors.text} />
+                    </View>
+                    <View>
+                        <Text style={[styles.rowLabel, { color: theme.colors.text }]}>AI Assistant</Text>
+                        <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Show Assistant tab in projects</Text>
+                    </View>
+                </View>
+                <Switch
+                    value={aiAssistantEnabled}
+                    onValueChange={toggleAiAssistant}
+                    trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+                />
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.row}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="eye" size={16} color={theme.colors.text} />
+                    </View>
+                    <View>
+                        <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Keep Screen Awake</Text>
+                        <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>While in project view</Text>
+                    </View>
+                </View>
+                <Switch
+                    value={keepScreenAwake}
+                    onValueChange={setKeepScreenAwake}
+                    trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+                />
+            </View>
         </View>
-        <View style={[styles.toggleRow, { borderColor: theme.colors.border }]}>
-          <View style={styles.toggleCopy}>
-            <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Voice command hints</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-              Show upcoming voice command capabilities around the app.
-            </Text>
-          </View>
-          <Switch
-            value={voiceHintsEnabled}
-            onValueChange={toggleVoiceHints}
-            thumbColor={voiceHintsEnabled ? theme.colors.accent : theme.colors.border}
-          />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>DATA</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+            <TouchableOpacity onPress={handleExport} style={styles.row}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="download" size={16} color={theme.colors.text} />
+                    </View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Export Backup</Text>
+                </View>
+                <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity onPress={handleImport} style={styles.row}>
+                <View style={styles.iconLabelRow}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+                        <FontAwesome name="upload" size={16} color={theme.colors.text} />
+                    </View>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text }]}>Import Backup</Text>
+                </View>
+                <FontAwesome name="chevron-right" size={14} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
         </View>
-      </Card>
-
-      <Card title="Data management" subtitle="Backup & restore">
-        <TouchableOpacity
-          onPress={handleExport}
-          style={[
-            styles.dataButton,
-            { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-          ]}>
-          <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Export backup</Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-            Download all your projects, yarns, and patterns as JSON
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleImport}
-          style={[
-            styles.dataButton,
-            { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-            { marginTop: 12 },
-          ]}>
-          <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Import backup</Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-            Restore from a previously exported JSON file
-          </Text>
-        </TouchableOpacity>
-      </Card>
-
-      <TouchableOpacity
-        onPress={() => router.push('/profile' as any)}
-        style={[
-          styles.profileButton,
-          { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
-        ]}>
-        <Text style={{ color: theme.colors.text }}>View profile summary</Text>
-      </TouchableOpacity>
+      </View>
+      
+      <View style={[styles.section, { marginBottom: 40 }]}>
+         <TouchableOpacity
+            onPress={() => router.push('/profile' as any)}
+            style={[styles.profileButton, { backgroundColor: theme.colors.surfaceAlt }]}
+         >
+             <Text style={{ color: theme.colors.text, fontWeight: '600' }}>View Profile Summary</Text>
+         </TouchableOpacity>
+         <Text style={{ textAlign: 'center', marginTop: 16, color: theme.colors.muted, fontSize: 12 }}>
+             StitchFlow v1.0.0
+         </Text>
+      </View>
 
       <Modal
         visible={showConverter}
@@ -261,101 +253,113 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+      
+      <ColorPickerModal
+          visible={showColorPicker}
+          initialColor={customAccentColor || theme.colors.accent}
+          onClose={() => setShowColorPicker(false)}
+          onSelect={(hex) => {
+            setCustomAccentColor(hex);
+            setShowColorPicker(false);
+            showSuccess('Accent color updated');
+          }}
+        />
     </Screen>
   );
 }
 
 const themeOptions: Array<{ label: string; value: ThemeMode }> = [
-  { label: 'System', value: 'system' },
+  { label: 'Auto', value: 'system' },
   { label: 'Light', value: 'light' },
   { label: 'Dark', value: 'dark' },
 ];
 
 const styles = StyleSheet.create({
   header: {
-    marginBottom: 20,
+    marginBottom: 32,
+    paddingTop: 16,
   },
   eyebrow: {
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontSize: 12,
-    marginBottom: 6,
+    letterSpacing: 1.5,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 6,
+    fontSize: 34,
+    fontWeight: '800',
+    marginBottom: 8,
   },
   description: {
     fontSize: 16,
     lineHeight: 24,
   },
-  toolButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 16,
+  section: {
+      marginBottom: 24,
   },
-  themeRow: {
-    flexDirection: 'row',
-    marginTop: 12,
-    marginHorizontal: -6,
+  sectionTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1,
+      marginBottom: 12,
+      paddingLeft: 8,
   },
-  themeChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginHorizontal: 6,
+  card: {
+      borderRadius: 24,
+      overflow: 'hidden',
   },
-  cycleButton: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 12,
+  row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+      minHeight: 56,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  rowLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 2,
   },
-  toggleCopy: {
-    flex: 1,
-    marginRight: 12,
-    gap: 4,
+  iconLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+  },
+  iconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+  },
+  divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: 'rgba(150,150,150,0.1)',
+      marginLeft: 16,
+  },
+  themeToggleRow: {
+      flexDirection: 'row',
+      backgroundColor: 'rgba(0,0,0,0.05)',
+      borderRadius: 12,
+      padding: 2,
+  },
+  themePill: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+  },
+  colorSwatch: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: 'rgba(255,255,255,0.2)',
   },
   profileButton: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  dataButton: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-  },
-  accentColorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  accentColorSwatch: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  resetButton: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+      padding: 16,
+      borderRadius: 20,
+      alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,

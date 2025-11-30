@@ -51,6 +51,7 @@
 - **Haptics:** Added feedback to key actions (counters, tabs).
 - **Transitions:** Smooth page transitions.
 - **Publishing Flow:** Seamless "Review & Share" flow from project completion.
+- **AI Settings:** Toggle AI Assistant visibility in Settings.
 
 ### 3. Advanced Features (Planned) 📅
 - **AI Assistant:** Chat interface for pattern help (UI mockup ready).
@@ -62,9 +63,13 @@
 ## 📋 Todo List
 
 ### Immediate Next Steps
-- [ ] **Counter Animations:** Visual pulse/scale when incrementing.
-- [ ] **Photo Gallery:** Pinch-to-zoom, swipe navigation.
+- [x] **Counter Animations:** Visual pulse/scale when incrementing.
+- [x] **Photo Gallery:** Pinch-to-zoom, swipe navigation.
+- [ ] **AI Assistant Toggle:** Add setting to enable/disable AI tab. (Implemented in Store/Settings, verifying ProjectTabs)
 - [ ] **Search:** Advanced filters (tags, dates).
+- [ ] **Loading States:** Add spinners and toast notifications for async actions.
+- [ ] **Linked Counters:** Support for linking multi-part counters (e.g. sleeves).
+- [ ] **Pattern Checklists:** Interactive row checklists for patterns.
 
 ### Future
 - [ ] Cloud Sync (Supabase/Firebase).
@@ -74,7 +79,7 @@
 ---
 
 ## 🐛 Known Issues
-- *None currently tracked.*
+- **Web App Interactivity:** Buttons (TouchableOpacity) on the web version are currently non-responsive despite hover states working. Likely an issue with `ScrollView` event capturing or `react-native-web` gesture handling conflicts. The web layout has been simplified, but full interactivity is pending. **Status:** Deferred to prioritize iOS features.
 
 ## 📈 Stats
 - **Screens:** 12+
