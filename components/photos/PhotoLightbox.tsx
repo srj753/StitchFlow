@@ -33,18 +33,6 @@ export function PhotoLightbox({ photos, initialIndex = 0, visible, onClose }: Ph
     setCurrentIndex(index);
   };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < photos.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.container}>
@@ -57,8 +45,12 @@ export function PhotoLightbox({ photos, initialIndex = 0, visible, onClose }: Ph
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={handleScroll}
-          contentOffset={{ x: currentIndex * SCREEN_WIDTH, y: 0 }}
-          style={styles.scrollView}>
+          contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
+          style={styles.scrollView}
+          maximumZoomScale={3} // Enables pinch-to-zoom
+          minimumZoomScale={1}
+          scrollEventThrottle={16}
+        >
           {photos.map((uri, index) => (
             <View key={uri} style={styles.imageContainer}>
               <Image source={{ uri }} style={styles.image} resizeMode="contain" />
@@ -67,34 +59,12 @@ export function PhotoLightbox({ photos, initialIndex = 0, visible, onClose }: Ph
         </ScrollView>
 
         {photos.length > 1 && (
-          <View style={styles.controls}>
-            <TouchableOpacity
-              onPress={handlePrevious}
-              disabled={currentIndex === 0}
-              style={[
-                styles.controlButton,
-                {
-                  backgroundColor: theme.colors.surfaceAlt,
-                  opacity: currentIndex === 0 ? 0.5 : 1,
-                },
-              ]}>
-              <Text style={{ color: theme.colors.text }}>‹</Text>
-            </TouchableOpacity>
-            <Text style={[styles.counter, { color: theme.colors.textSecondary }]}>
-              {currentIndex + 1} / {photos.length}
-            </Text>
-            <TouchableOpacity
-              onPress={handleNext}
-              disabled={currentIndex === photos.length - 1}
-              style={[
-                styles.controlButton,
-                {
-                  backgroundColor: theme.colors.surfaceAlt,
-                  opacity: currentIndex === photos.length - 1 ? 0.5 : 1,
-                },
-              ]}>
-              <Text style={{ color: theme.colors.text }}>›</Text>
-            </TouchableOpacity>
+          <View style={styles.footer}>
+            <View style={[styles.indicator, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+                <Text style={[styles.counter, { color: '#fff' }]}>
+                {currentIndex + 1} / {photos.length}
+                </Text>
+            </View>
           </View>
         )}
       </View>
@@ -105,7 +75,7 @@ export function PhotoLightbox({ photos, initialIndex = 0, visible, onClose }: Ph
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: '#000', // Full black for immersive feel
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -122,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
   },
   scrollView: {
@@ -136,28 +106,21 @@ const styles = StyleSheet.create({
   },
   image: {
     width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT * 0.8,
+    height: SCREEN_HEIGHT, // Full height
   },
-  controls: {
-    position: 'absolute',
-    bottom: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+  footer: {
+      position: 'absolute',
+      bottom: 40,
+      width: '100%',
+      alignItems: 'center',
   },
-  controlButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+  indicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   counter: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
 });
-
-
-
-

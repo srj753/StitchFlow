@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
@@ -30,11 +30,28 @@ export default function ProjectsHomeScreen() {
     [projects, activeProjectId],
   );
   const [filter, setFilter] = useState<FilterValue>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return projects;
-    return projects.filter((project) => (project.status ?? 'active') === filter);
-  }, [projects, filter]);
+    let result = projects;
+
+    // Status Filter
+    if (filter !== 'all') {
+      result = result.filter((project) => (project.status ?? 'active') === filter);
+    }
+
+    // Text Search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((project) => 
+        project.name.toLowerCase().includes(query) || 
+        project.patternName?.toLowerCase().includes(query) ||
+        project.notes?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [projects, filter, searchQuery]);
 
   const stats = useMemo(() => {
     const activeCount = projects.filter((p) => (p.status ?? 'active') === 'active').length;
@@ -109,6 +126,24 @@ export default function ProjectsHomeScreen() {
         ) : null}
       </Card>
 
+      <View style={styles.searchContainer}>
+        <View style={[styles.searchBar, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+          <FontAwesome name="search" size={16} color={theme.colors.muted} style={styles.searchIcon} />
+          <TextInput 
+            placeholder="Search projects..." 
+            placeholderTextColor={theme.colors.muted}
+            style={[styles.searchInput, { color: theme.colors.text }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <FontAwesome name="times-circle" size={16} color={theme.colors.muted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <Card title="Filters" style={styles.sectionCard}>
         <View style={styles.filterRow}>
           {filters.map((item) => {
@@ -153,10 +188,10 @@ export default function ProjectsHomeScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="🧶"
-            title="No projects yet"
-            description="Start tracking your crochet projects with counters, notes, and progress photos."
-            actionLabel="Create your first project"
-            onAction={() => router.push('/projects/create')}
+            title={searchQuery ? "No matches found" : "No projects yet"}
+            description={searchQuery ? "Try a different search term or filter." : "Start tracking your crochet projects with counters, notes, and progress photos."}
+            actionLabel={searchQuery ? "Clear Search" : "Create your first project"}
+            onAction={searchQuery ? () => setSearchQuery('') : () => router.push('/projects/create')}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -240,6 +275,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  searchContainer: {
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0, // Remove default padding
   },
   filterRow: {
     flexDirection: 'row',

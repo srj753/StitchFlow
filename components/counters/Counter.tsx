@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  Animated,
   Modal,
   StyleSheet,
   Text,
@@ -26,10 +27,42 @@ export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete }
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [editValue, setEditValue] = useState(counter.currentValue.toString());
   const [renameValue, setRenameValue] = useState(counter.label);
+  
+  // Animation value
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const progress = counter.targetValue
     ? Math.min(100, (counter.currentValue / counter.targetValue) * 100)
     : undefined;
+
+  const animatePulse = (direction: 'up' | 'down' = 'up') => {
+    const scaleTo = direction === 'up' ? 1.2 : 0.9;
+    
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: scaleTo,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleIncrement = (delta: number) => {
+      if (delta > 0) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          animatePulse('up');
+      } else {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          animatePulse('down');
+      }
+      onIncrement(delta);
+  };
 
   const handleSaveEdit = () => {
     const parsed = parseInt(editValue, 10);
@@ -73,7 +106,17 @@ export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete }
 
       {/* Main Counter Value */}
       <TouchableOpacity onPress={handleOpenEdit} style={styles.valueContainer} activeOpacity={0.7}>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{counter.currentValue}</Text>
+        <Animated.Text 
+            style={[
+                styles.value, 
+                { 
+                    color: theme.colors.text,
+                    transform: [{ scale: scaleAnim }]
+                }
+            ]}
+        >
+            {counter.currentValue}
+        </Animated.Text>
         {counter.targetValue !== undefined && (
           <Text style={[styles.target, { color: theme.colors.textSecondary }]}>
             / {counter.targetValue}
@@ -100,61 +143,40 @@ export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete }
       <View style={styles.quickButtons}>
         <QuickButton
           label="-10"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onIncrement(-10);
-          }}
+          onPress={() => handleIncrement(-10)}
           theme={theme}
         />
         <QuickButton
           label="-5"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onIncrement(-5);
-          }}
+          onPress={() => handleIncrement(-5)}
           theme={theme}
         />
         <QuickButton
           label="-1"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onIncrement(-1);
-          }}
+          onPress={() => handleIncrement(-1)}
           theme={theme}
           large
         />
         <QuickButton
           label="+1"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onIncrement(1);
-          }}
+          onPress={() => handleIncrement(1)}
           theme={theme}
           large
           primary
         />
         <QuickButton
           label="+5"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onIncrement(5);
-          }}
+          onPress={() => handleIncrement(5)}
           theme={theme}
         />
         <QuickButton
           label="+10"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onIncrement(10);
-          }}
+          onPress={() => handleIncrement(10)}
           theme={theme}
         />
         <QuickButton
           label="+20"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            onIncrement(20);
-          }}
+          onPress={() => handleIncrement(20)}
           theme={theme}
         />
       </View>
@@ -432,7 +454,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
-
-
-

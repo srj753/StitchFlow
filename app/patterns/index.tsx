@@ -92,6 +92,11 @@ export default function PatternsScreen() {
           placeholderTextColor={theme.colors.muted}
           style={[styles.searchInput, { color: theme.colors.text }]}
         />
+        {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')}>
+              <FontAwesome name="times-circle" size={16} color={theme.colors.muted} />
+            </TouchableOpacity>
+        )}
       </View>
 
       {/* Quick Actions */}
