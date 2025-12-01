@@ -8,6 +8,7 @@ import { Alert, Dimensions, ImageBackground, ScrollView, StyleSheet, Text, Touch
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { AssistantView } from '@/components/projects/AssistantView';
+import { DiagramsView } from '@/components/projects/DiagramsView';
 import { PatternView } from '@/components/projects/PatternView';
 import { ProjectTab, ProjectTabs } from '@/components/projects/ProjectTabs';
 import { StudioView } from '@/components/projects/StudioView';
@@ -67,6 +68,8 @@ export default function ProjectDetailScreen() {
         return <PatternView project={project} />;
       case 'studio':
         return <StudioView project={project} />;
+      case 'diagrams':
+        return <DiagramsView project={project} />;
       case 'ai':
         return <AssistantView project={project} />;
       default:

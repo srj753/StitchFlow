@@ -137,6 +137,9 @@ const createProject = (input: ProjectInput): Project => {
     gaugeSwatchRows: input.gaugeSwatchRows,
     gaugeSwatchStitches: input.gaugeSwatchStitches,
     gaugeSwatchInches: input.gaugeSwatchInches,
+    
+    // Diagrams
+    diagrams: [],
   };
 
   // Fix counter projectIds

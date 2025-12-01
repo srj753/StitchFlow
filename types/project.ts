@@ -94,6 +94,45 @@ export type Project = {
   gaugeSwatchRows?: number;
   gaugeSwatchStitches?: number;
   gaugeSwatchInches?: number;
+  
+  // Diagrams
+  diagrams?: Diagram[];
+};
+
+/**
+ * Drawing diagram for projects
+ */
+export type Diagram = {
+  id: string;
+  projectId: string;
+  name: string;
+  paths: DrawingPath[];
+  width: number;
+  height: number;
+  backgroundColor?: string;
+  createdAt: string;
+  updatedAt: string;
+  thumbnail?: string; // Base64 thumbnail for gallery view
+};
+
+/**
+ * A single drawing path (stroke)
+ */
+export type DrawingPath = {
+  id: string;
+  points: Point[];
+  color: string;
+  strokeWidth: number;
+  tool: 'pen' | 'pencil' | 'eraser';
+};
+
+/**
+ * A point in a drawing path
+ */
+export type Point = {
+  x: number;
+  y: number;
+  pressure?: number; // For future pressure-sensitive support
 };
 
 export type ProjectInput = {

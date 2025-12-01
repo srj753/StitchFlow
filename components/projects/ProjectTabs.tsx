@@ -6,7 +6,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export type ProjectTab = 'track' | 'pattern' | 'studio' | 'ai';
+export type ProjectTab = 'track' | 'pattern' | 'studio' | 'diagrams' | 'ai';
 
 type ProjectTabsProps = {
   activeTab: ProjectTab;
@@ -21,6 +21,7 @@ export function ProjectTabs({ activeTab, onTabChange }: ProjectTabsProps) {
     { id: 'track', label: 'Track' },
     { id: 'pattern', label: 'Pattern' },
     { id: 'studio', label: 'Studio' },
+    { id: 'diagrams', label: 'Diagrams' },
     ...(aiAssistantEnabled ? [{ id: 'ai' as ProjectTab, label: 'Assistant' }] : []),
   ];
 
