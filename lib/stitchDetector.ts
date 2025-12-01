@@ -129,3 +129,4 @@ export function getStitchInfo(abbreviation: string): DetectedStitch | undefined 
 }
 
 
+
