@@ -422,6 +422,28 @@
 **Agent Assignment:** iOS-specific, can work in parallel with Part B  
 **Note:** iCloud sync skipped - will use backend account system for syncing
 
+#### Implementation Status
+
+1. **iOS Widgets** ⏳ PARTIAL
+   - ✅ Created widget setup documentation (`docs/IOS_WIDGET_SETUP.md`)
+   - ✅ Defined widget data model and structure
+   - ⏳ Widget extension requires native iOS code (Swift)
+   - ⏳ App Group configuration needed
+   - ⏳ Deep linking for widget actions
+
+2. **iOS Shortcuts Integration** ✅ FOUNDATION
+   - ✅ Created shortcuts configuration (`lib/iosShortcuts.ts`)
+   - ✅ Defined Siri shortcut phrases
+   - ✅ App Intents structure defined
+   - ⏳ Native implementation required for iOS 16+ App Intents
+   - ⏳ Deep linking handler needed
+
+3. **iOS-Specific UI** ✅ IN PROGRESS
+   - ✅ Created iOS-optimized haptic feedback (`lib/iosHaptics.ts`)
+   - ✅ Updated Counter component to use iOS haptics
+   - ⏳ iOS-style modals and sheets (can use React Native components)
+   - ⏳ Native iOS animations
+
 #### Implementation Plan
 
 1. **iOS Widgets** (2-3 hours)
