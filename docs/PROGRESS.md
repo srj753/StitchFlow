@@ -1,7 +1,7 @@
 # Implementation Progress
 
 **Last Updated:** December 2024  
-**Current Status:** ✅ Phase 1, 2.1, 2.2, 2.3, 2.4, 2.5 Part A, 2.6 Part A, 2.7 Part B Complete | ⏸️ Phase 2.5 Part B Paused (Requires Dev Build) | 🔄 Phase 2.7 Part A In Progress
+**Current Status:** ✅ Phase 1, 2.1, 2.2, 2.3, 2.4, 2.5 Part A, 2.6 Part A, 2.7 Part B Complete | ⏸️ Phase 2.5 Part B Paused (Requires Dev Build) | 🔄 Phase 2.7 Part A In Progress | ✨ Phase 2.3 Part C Enhanced (AI Pattern Parsing)
 
 ---
 
@@ -160,24 +160,35 @@
 
 ### Part C: AI-Powered Pattern Extraction (Completed) ✅
 1. **Universal AI Integration** ✅
-   - Integrated **Groq** (llama-3.1-8b-instant, llama-3.2-90b-vision-preview) for fast, cheap inference
+   - Integrated **Groq** (llama-3.1-70b-versatile, llama-3.2-90b-vision-preview) for fast, cheap inference
    - Fallback structure for OpenAI
    - Configurable API Key in Settings
+   - **Enhanced System Instructions:** Implemented detailed pattern parsing instructions adapted from StitchFlow AI Studio
+   - **Structured Output Format:** Returns metadata, description, materials, gauge, abbreviations, and structured instructions with sections/steps
 
 2. **Multi-Source Extraction** ✅
    - **PDF:** Extract text from PDFs (Web via pdfjs-dist, Native via AI Vision/Base64)
    - **Images:** Extract pattern from photos/screenshots via AI Vision
    - **Web:** Scrape and parse pattern text from URLs
+   - **Multi-Image Support:** Process multiple images sequentially for multi-page patterns
 
 3. **Smart Parsing** ✅
    - Uses LLM to structure unstructured pattern text into JSON
-   - Extracts materials, gauge, sizing, and structured instructions automatically
+   - Extracts materials (yarn and tools separately), gauge, sizing, and structured instructions automatically
+   - **Detailed Extraction Rules:**
+     - Extracts "romance text" (description) separately from technical notes
+     - Classifies difficulty (beginner/intermediate/advanced) with clear criteria
+     - Standardizes yarn weights and hook sizes
+     - Breaks down instructions into logical sections with individual row steps
+     - Extracts stitch counts and row labels accurately
+   - **JSON Parsing:** Handles markdown code blocks and edge cases in AI responses
+   - **Error Handling:** Improved error messages and fallback to regex extraction
 
 **Files Created/Modified:**
-- `lib/aiService.ts`
+- `lib/aiService.ts` - Enhanced with detailed system instructions and improved JSON parsing
 - `lib/pdfExtractor.ts`
 - `lib/imageOCR.ts`
-- `app/patterns/import.tsx`
+- `app/patterns/import.tsx` - Updated to handle new structured format (metadata, materials object, instructions array)
 - `app/settings/index.tsx`
 
 ---
@@ -688,7 +699,7 @@ Each agent can work independently on their assigned part without conflicts.
 
 ## 🐛 Known Issues
 
-- **AI Pattern Extraction (PDF & Image):** Currently **NON-FUNCTIONAL**. The Groq Vision models are unstable or decommissioned (`llama-3.2-11b-vision-preview`), causing failures in both PDF (native) and Image extraction workflows. The UI and logic (multi-image support, transcription pipeline) are fully implemented but blocked by API availability.
+- **AI Pattern Extraction (PDF & Image):** ⚠️ **ENHANCED & PARTIALLY FUNCTIONAL**. The Groq Vision model (`llama-3.2-90b-vision-preview`) may be unstable. Text-based parsing with `llama-3.1-70b-versatile` is fully functional. Enhanced with detailed system instructions (adapted from StitchFlow AI Studio) and improved JSON parsing. The UI and logic (multi-image support, transcription pipeline) are fully implemented. **Status:** Users should test with their Groq API keys. Falls back to regex extraction if AI fails.
 - **Web App Interactivity:** Some web-specific issues remain, prioritized for mobile-first development
 - **Voice Commands:** ✅ Part A implemented but requires **development build** (not available in Expo Go). The feature gracefully degrades in Expo Go without crashing the app. **Part B is paused** until development build environment is available.
 

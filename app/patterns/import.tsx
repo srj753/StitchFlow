@@ -60,32 +60,99 @@ export default function ImportPatternScreen() {
         data = await aiService.parsePatternFromText(content); // content is text
       }
 
-      // Map AI data to form
-      if (data.name) setName(data.name);
-      if (data.designer) setDesigner(data.designer);
+      // Handle new structured format from detailed parser
+      // Format: { metadata: {...}, description, materials: {...}, gauge, abbreviations, instructions: [...] }
+      const metadata = data.metadata || data;
+      const materials = data.materials || { yarn: [], tools: [] };
+      const instructions = data.instructions || data.sections || [];
+
+      // Map metadata to form fields
+      if (metadata.name || data.name) setName(metadata.name || data.name);
+      if (metadata.designer || data.designer) setDesigner(metadata.designer || data.designer);
       if (data.description) setDescription(data.description);
-      if (data.difficulty) setDifficulty(data.difficulty.toLowerCase() as PatternDifficulty);
-      if (data.yarnWeight) setYarnWeight(data.yarnWeight);
-      if (data.hookSize) setHookSize(data.hookSize);
+      if (metadata.difficulty || data.difficulty) {
+        const difficulty = (metadata.difficulty || data.difficulty).toLowerCase();
+        if (['beginner', 'intermediate', 'advanced'].includes(difficulty)) {
+          setDifficulty(difficulty as PatternDifficulty);
+        }
+      }
+      if (metadata.yarnWeight || data.yarnWeight) setYarnWeight(metadata.yarnWeight || data.yarnWeight);
+      if (metadata.hookSize || data.hookSize) setHookSize(metadata.hookSize || data.hookSize);
       if (data.notes) setNotes(data.notes);
       
-      // Reconstruct structured data for the snippet
-      let niceSnippet = `${data.name}\nBy ${data.designer}\n\n${data.description}\n\nMaterials:\n${data.materials?.join('\n')}\n\nPattern:\n`;
-      data.sections?.forEach((section: any) => {
-        niceSnippet += `\n${section.name}\n`;
-        section.rows?.forEach((row: any) => {
-          niceSnippet += `${row.label}: ${row.instruction} (${row.stitchCount})\n`;
-        });
-      });
+      // Reconstruct structured pattern text for snippet
+      // Format: Header, Materials, Gauge, Abbreviations, Instructions
+      let niceSnippet = '';
       
-      setExtractedText(niceSnippet);
+      // Header
+      if (metadata.name || data.name) {
+        niceSnippet += `${metadata.name || data.name}\n`;
+      }
+      if (metadata.designer || data.designer) {
+        niceSnippet += `By ${metadata.designer || data.designer}\n`;
+      }
+      if (data.description) {
+        niceSnippet += `\n${data.description}\n`;
+      }
+      
+      // Materials
+      if (materials.yarn && materials.yarn.length > 0) {
+        niceSnippet += `\nMaterials:\n`;
+        materials.yarn.forEach((yarn: string) => {
+          niceSnippet += `- ${yarn}\n`;
+        });
+      }
+      if (materials.tools && materials.tools.length > 0) {
+        materials.tools.forEach((tool: string) => {
+          niceSnippet += `- ${tool}\n`;
+        });
+      }
+      
+      // Gauge
+      if (data.gauge) {
+        niceSnippet += `\nGauge: ${data.gauge}\n`;
+      }
+      
+      // Abbreviations
+      if (data.abbreviations && data.abbreviations.length > 0) {
+        niceSnippet += `\nAbbreviations:\n`;
+        data.abbreviations.forEach((abbr: string) => {
+          niceSnippet += `${abbr}\n`;
+        });
+      }
+      
+      // Instructions
+      if (instructions.length > 0) {
+        niceSnippet += `\nInstructions:\n`;
+        instructions.forEach((section: any) => {
+          const sectionName = section.section_name || section.name || 'Main Pattern';
+          niceSnippet += `\n${sectionName}\n`;
+          
+          const steps = section.steps || section.rows || [];
+          steps.forEach((step: any) => {
+            const rowLabel = step.row_label || step.label || '';
+            const instruction = step.instruction || '';
+            const stitchCount = step.stitch_count || step.stitchCount || '';
+            
+            niceSnippet += `${rowLabel}: ${instruction}`;
+            if (stitchCount) {
+              niceSnippet += ` (${stitchCount})`;
+            }
+            niceSnippet += '\n';
+          });
+        });
+      }
+      
+      setExtractedText(niceSnippet.trim());
       setExtractionProgress(1);
       showSuccess('AI Successfully parsed the pattern!');
       return true;
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('AI Parse Error:', err);
-      // Don't show error here, let it fallback to standard extraction if this returns false
+      // Show more detailed error for debugging
+      const errorMsg = err.message || 'Unknown error';
+      showError(`AI parsing failed: ${errorMsg}`);
       return false;
     }
   };
@@ -169,25 +236,40 @@ export default function ImportPatternScreen() {
       if (!result.canceled && result.assets.length > 0) {
         setFileName(`${result.assets.length} images selected`);
         
-        // If AI is enabled, process each image
+        // If AI is enabled, process images with AI
         if (aiAssistantEnabled && openaiApiKey) {
-          let combinedText = '';
           let processedCount = 0;
+          let lastSuccessfulData: any = null;
           
-          for (const asset of result.assets) {
-            // If base64 is missing (sometimes happens), read it
-            const base64 = asset.base64 || await readFileAsBase64(asset.uri);
-            
-            // Process individually (skeleton logic: simply attempting extraction on each)
-            // In a real app, we'd send all to a context-aware AI or merge intelligently
-            await processWithAi(base64, true); 
-            
-            // Note: processWithAi currently overwrites state. 
-            // For skeleton, this confirms the "attempt" was made.
+          // Process first image (most important) - this will populate the form
+          const firstAsset = result.assets[0];
+          const base64 = firstAsset.base64 || await readFileAsBase64(firstAsset.uri);
+          const success = await processWithAi(base64, true);
+          
+          if (success) {
             processedCount++;
-            setExtractionProgress(processedCount / result.assets.length);
+            lastSuccessfulData = { base64, uri: firstAsset.uri };
           }
-          showSuccess(`Processed ${processedCount} images`);
+          
+          // Process remaining images if any (for multi-page patterns)
+          // Note: Currently we only use the first image's data, but we could combine them
+          for (let i = 1; i < result.assets.length; i++) {
+            const asset = result.assets[i];
+            const assetBase64 = asset.base64 || await readFileAsBase64(asset.uri);
+            // Process but don't overwrite form (just for progress tracking)
+            try {
+              const aiService = new AiService({ apiKey: openaiApiKey, provider: aiProvider });
+              await aiService.parsePatternFromImage(assetBase64);
+              processedCount++;
+            } catch (err) {
+              console.log(`Failed to process image ${i + 1}:`, err);
+            }
+            setExtractionProgress((i + 1) / result.assets.length);
+          }
+          
+          if (processedCount > 0) {
+            showSuccess(`Processed ${processedCount} of ${result.assets.length} images`);
+          }
         } else {
           setFileUri(result.assets[0].uri); // Just keep reference to first one
           // Extract text from first image using OCR if available
