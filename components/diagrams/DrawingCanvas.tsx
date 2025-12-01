@@ -43,13 +43,18 @@ export function DrawingCanvas({
 
   const snapPoint = useCallback(
     (point: Point): Point => {
-      if (!snapToGrid) return point;
-      return {
-        x: Math.round(point.x / gridSize) * gridSize,
-        y: Math.round(point.y / gridSize) * gridSize,
-      };
+      // Clamp coordinates to canvas bounds
+      let x = Math.max(0, Math.min(width, point.x));
+      let y = Math.max(0, Math.min(height, point.y));
+      
+      if (snapToGrid) {
+        x = Math.round(x / gridSize) * gridSize;
+        y = Math.round(y / gridSize) * gridSize;
+      }
+      
+      return { x, y };
     },
-    [snapToGrid, gridSize],
+    [snapToGrid, gridSize, width, height],
   );
 
   const panGesture = Gesture.Pan()
@@ -76,10 +81,18 @@ export function DrawingCanvas({
       try {
         if (currentPath) {
           const point = snapPoint({ x: event.x, y: event.y });
-          setCurrentPath({
-            ...currentPath,
-            points: [...currentPath.points, point],
-          });
+          // Limit points to prevent memory issues (sample every few points)
+          const shouldAddPoint = currentPath.points.length === 0 || 
+            currentPath.points.length % 2 === 0 || // Sample every other point for performance
+            Math.abs(currentPath.points[currentPath.points.length - 1].x - point.x) > 2 ||
+            Math.abs(currentPath.points[currentPath.points.length - 1].y - point.y) > 2;
+          
+          if (shouldAddPoint) {
+            setCurrentPath({
+              ...currentPath,
+              points: [...currentPath.points, point],
+            });
+          }
         }
       } catch (error) {
         console.error('Error in onUpdate:', error);
@@ -88,11 +101,18 @@ export function DrawingCanvas({
     .onEnd(() => {
       try {
         if (currentPath && currentPath.points.length > 0) {
+          // Ensure we have at least 2 points for a valid path
+          if (currentPath.points.length === 1) {
+            // Duplicate the point to make a valid line
+            currentPath.points.push({ ...currentPath.points[0] });
+          }
           onPathsChange([...paths, currentPath]);
           setCurrentPath(null);
         }
       } catch (error) {
         console.error('Error in onEnd:', error);
+        // Reset on error to prevent stuck state
+        setCurrentPath(null);
       }
     })
     .onFinalize(() => {
