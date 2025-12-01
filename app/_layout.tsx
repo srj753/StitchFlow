@@ -5,6 +5,7 @@ import { Tabs } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { ToastManagerWrapper } from '@/components/ui/ToastProvider';
@@ -61,9 +62,10 @@ function RootLayoutNav() {
   const isWeb = Platform.OS === 'web';
 
   return (
-    <ToastProvider>
-      <ThemeProvider value={effectiveScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Tabs
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ToastProvider>
+        <ThemeProvider value={effectiveScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Tabs
         initialRouteName="home/index"
         screenOptions={{
           headerShown: false,
@@ -176,8 +178,9 @@ function RootLayoutNav() {
           }}
         />
       </Tabs>
-        <ToastManagerWrapper />
-      </ThemeProvider>
-    </ToastProvider>
+          <ToastManagerWrapper />
+        </ThemeProvider>
+      </ToastProvider>
+    </GestureHandlerRootView>
   );
 }
