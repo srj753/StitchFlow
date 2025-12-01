@@ -53,29 +53,51 @@ export function DrawingCanvas({
   );
 
   const panGesture = Gesture.Pan()
+    .minDistance(1) // Minimum distance before gesture activates
+    .activeOffsetX(0) // Allow horizontal pan immediately
+    .activeOffsetY(0) // Allow vertical pan immediately
     .onStart((event) => {
-      const point = snapPoint({ x: event.x, y: event.y });
-      const newPath: DrawingPath = {
-        id: `path-${Date.now()}-${pathIdRef.current++}`,
-        points: [point],
-        color: currentTool === 'eraser' ? theme.colors.background : currentColor,
-        strokeWidth: currentTool === 'eraser' ? strokeWidth * 2 : strokeWidth,
-        tool: currentTool,
-      };
-      setCurrentPath(newPath);
+      try {
+        // Coordinates are relative to the gesture detector's view
+        const point = snapPoint({ x: event.x, y: event.y });
+        const newPath: DrawingPath = {
+          id: `path-${Date.now()}-${pathIdRef.current++}`,
+          points: [point],
+          color: currentTool === 'eraser' ? theme.colors.background : currentColor,
+          strokeWidth: currentTool === 'eraser' ? strokeWidth * 2 : strokeWidth,
+          tool: currentTool,
+        };
+        setCurrentPath(newPath);
+      } catch (error) {
+        console.error('Error in onStart:', error);
+      }
     })
     .onUpdate((event) => {
-      if (currentPath) {
-        const point = snapPoint({ x: event.x, y: event.y });
-        setCurrentPath({
-          ...currentPath,
-          points: [...currentPath.points, point],
-        });
+      try {
+        if (currentPath) {
+          const point = snapPoint({ x: event.x, y: event.y });
+          setCurrentPath({
+            ...currentPath,
+            points: [...currentPath.points, point],
+          });
+        }
+      } catch (error) {
+        console.error('Error in onUpdate:', error);
       }
     })
     .onEnd(() => {
-      if (currentPath && currentPath.points.length > 0) {
-        onPathsChange([...paths, currentPath]);
+      try {
+        if (currentPath && currentPath.points.length > 0) {
+          onPathsChange([...paths, currentPath]);
+          setCurrentPath(null);
+        }
+      } catch (error) {
+        console.error('Error in onEnd:', error);
+      }
+    })
+    .onFinalize(() => {
+      // Cleanup if needed
+      if (currentPath) {
         setCurrentPath(null);
       }
     });
@@ -127,7 +149,10 @@ export function DrawingCanvas({
   return (
     <View style={[styles.container, { width, height }]}>
       <GestureDetector gesture={panGesture}>
-        <View style={styles.canvasContainer}>
+        <View 
+          style={styles.canvasContainer}
+          collapsable={false}
+        >
           <Svg width={width} height={height} style={styles.svg}>
             {/* Grid overlay */}
             {renderGrid()}

@@ -223,7 +223,11 @@ export function DiagramsView({ project }: DiagramsViewProps) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      scrollEnabled={true}
+      nestedScrollEnabled={true}
+    >
       {/* Diagram Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -262,7 +266,7 @@ export function DiagramsView({ project }: DiagramsViewProps) {
       </View>
 
       {/* Drawing Canvas */}
-      <View style={styles.canvasWrapper}>
+      <View style={styles.canvasWrapper} collapsable={false}>
         <DrawingCanvas
           width={DEFAULT_CANVAS_WIDTH}
           height={DEFAULT_CANVAS_HEIGHT}
@@ -338,6 +342,7 @@ const styles = StyleSheet.create({
   canvasWrapper: {
     padding: 16,
     alignItems: 'center',
+    minHeight: DEFAULT_CANVAS_HEIGHT + 32, // Ensure enough space
   },
 });
 
