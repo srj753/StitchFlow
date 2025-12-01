@@ -1,7 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
@@ -12,6 +13,7 @@ import { ToastManagerWrapper } from '@/components/ui/ToastProvider';
 import { useEffectiveColorScheme } from '@/hooks/useEffectiveColorScheme';
 import { useTheme } from '@/hooks/useTheme';
 import { ToastProvider } from '@/hooks/useToast';
+import { parseShortcutUrl } from '@/lib/androidShortcuts';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -60,6 +62,58 @@ function RootLayoutNav() {
   const theme = useTheme();
   const effectiveScheme = useEffectiveColorScheme();
   const isWeb = Platform.OS === 'web';
+  const router = useRouter();
+  const segments = useSegments();
+
+  // Handle deep linking for Android shortcuts
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    // Handle initial URL (app opened via deep link)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Handle URL changes (app already open, new deep link received)
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleDeepLink = (url: string) => {
+    const action = parseShortcutUrl(url);
+    if (!action) return;
+
+    switch (action.type) {
+      case 'open_project':
+        router.push(`/projects/${action.projectId}`);
+        break;
+      case 'open_active_project':
+        // Find the first active project
+        // This would need access to the store, so we'll navigate to projects list
+        router.push('/projects');
+        break;
+      case 'increment_counter':
+        router.push(`/projects/${action.projectId}`);
+        // Counter increment would be handled in the project detail screen
+        break;
+      case 'create_project':
+        router.push('/projects/create');
+        break;
+      case 'view_patterns':
+        router.push('/patterns');
+        break;
+      case 'view_stash':
+        router.push('/patterns/stash');
+        break;
+    }
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

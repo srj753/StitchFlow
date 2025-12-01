@@ -2,6 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { usePreventAndroidBack } from '@/hooks/useAndroidBackHandler';
 import { useTheme } from '@/hooks/useTheme';
 import { useCounterPresetsStore } from '@/store/useCounterPresetsStore';
 import { CounterPreset, CounterPresetInput } from '@/types/counterPreset';
@@ -21,6 +22,9 @@ export function CreatePresetModal({ visible, onClose, onCreated }: CreatePresetM
   const [counters, setCounters] = useState<CounterPresetInput['counters']>([
     { type: 'custom', label: 'Counter 1', targetValue: undefined },
   ]);
+
+  // Prevent Android back button when modal is open
+  usePreventAndroidBack(visible);
 
   const categories: Array<{ label: string; value: CounterPreset['category'] }> = [
     { label: 'Amigurumi', value: 'amigurumi' },

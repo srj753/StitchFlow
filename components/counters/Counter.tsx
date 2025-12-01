@@ -1,5 +1,4 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import * as Haptics from 'expo-haptics';
 import { useRef, useState } from 'react';
 import {
     Animated,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
+import { counterHaptic } from '@/lib/iosHaptics';
 import { ProjectCounter } from '@/types/project';
 
 type CounterProps = {
@@ -57,11 +57,12 @@ export function Counter({ counter, onIncrement, onSetValue, onRename, onDelete, 
   };
 
   const handleIncrement = (delta: number) => {
+      // Use iOS-optimized haptics
       if (delta > 0) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          counterHaptic(delta);
           animatePulse('up');
       } else {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          counterHaptic(delta);
           animatePulse('down');
       }
       onIncrement(delta);

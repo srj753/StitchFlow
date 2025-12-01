@@ -2,6 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { usePreventAndroidBack } from '@/hooks/useAndroidBackHandler';
 import { useTheme } from '@/hooks/useTheme';
 import { Project } from '@/types/project';
 
@@ -33,6 +34,9 @@ export function AdvancedFilters({
 }: AdvancedFiltersProps) {
   const theme = useTheme();
   const [localFilters, setLocalFilters] = useState<AdvancedFilterOptions>(filters);
+
+  // Prevent Android back button when modal is open
+  usePreventAndroidBack(visible);
 
   // Sync local filters when modal opens or filters prop changes
   useEffect(() => {

@@ -75,7 +75,21 @@ export default function PatternDetailScreen() {
                     <TouchableOpacity style={styles.iconButton}>
                         <FontAwesome name="heart-o" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton}>
+                    <TouchableOpacity 
+                        style={styles.iconButton}
+                        onPress={async () => {
+                            try {
+                                const { sharePattern } = await import('@/lib/androidShare');
+                                await sharePattern(pattern.name, {
+                                    designer: pattern.designer,
+                                    difficulty: pattern.difficulty,
+                                    url: pattern.referenceUrl,
+                                });
+                            } catch (error) {
+                                console.error('Share error:', error);
+                            }
+                        }}
+                    >
                         <FontAwesome name="share-square-o" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                 </View>

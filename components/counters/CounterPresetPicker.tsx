@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { CreatePresetModal } from '@/components/counters/CreatePresetModal';
+import { usePreventAndroidBack } from '@/hooks/useAndroidBackHandler';
 import { useTheme } from '@/hooks/useTheme';
 import { useCounterPresetsStore } from '@/store/useCounterPresetsStore';
 import { CounterPreset } from '@/types/counterPreset';
@@ -27,6 +28,9 @@ export function CounterPresetPicker({ visible, onClose, onSelect }: CounterPrese
   const [selectedCategory, setSelectedCategory] = useState<CounterPreset['category'] | 'all'>('all');
   const [selectedPreset, setSelectedPreset] = useState<CounterPreset | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Prevent Android back button when modal is open
+  usePreventAndroidBack(visible && !showCreateModal);
 
   const categories: Array<CounterPreset['category'] | 'all'> = ['all', 'amigurumi', 'blanket', 'garment', 'accessory', 'custom'];
 
