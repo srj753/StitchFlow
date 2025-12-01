@@ -4,10 +4,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import Constants from 'expo-constants';
 import {
     Alert,
     Image,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -537,16 +539,20 @@ export function TrackView({ project }: TrackViewProps) {
           </View>
           
           {/* Voice Control */}
-          <View style={[styles.voiceControlContainer, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.voiceControlLabel, { color: theme.colors.textSecondary }]}>
-              Voice Control
-            </Text>
-            <VoiceControlButton
-              onCommand={handleVoiceCommand}
-              enabled={true}
-              size="medium"
-            />
-          </View>
+          {/* Only show voice control if not in Expo Go */}
+          {/* In Expo Go, the module doesn't exist, so we skip rendering to avoid errors */}
+          {Constants.executionEnvironment === 'standalone' || Constants.executionEnvironment === 'bare' ? (
+            <View style={[styles.voiceControlContainer, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.voiceControlLabel, { color: theme.colors.textSecondary }]}>
+                Voice Control
+              </Text>
+              <VoiceControlButton
+                onCommand={handleVoiceCommand}
+                enabled={true}
+                size="medium"
+              />
+            </View>
+          ) : null}
           
           <CounterPresetPicker
             visible={showPresetPicker}

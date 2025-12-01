@@ -4,30 +4,55 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { findCounterByName, parseVoiceCommand, ParsedCommand } from '@/lib/voiceCommands';
 
 // Lazy load Voice module to handle Expo Go compatibility
+// Check execution environment first to avoid require() in Expo Go
 let VoiceModule: any = null;
-let VoiceLoaded = false;
+let VoiceLoadAttempted = false;
 
-const getVoiceModule = (): any => {
-  if (VoiceLoaded) {
-    return VoiceModule;
+// Check if we're in an environment where the module might be available
+const isModuleEnvironment = (): boolean => {
+  try {
+    const Constants = require('expo-constants').default;
+    // Only try to load in standalone or bare environments
+    // In Expo Go (storeClient), the module definitely doesn't exist
+    return Constants?.executionEnvironment === 'standalone' || 
+           Constants?.executionEnvironment === 'bare' ||
+           !Constants?.executionEnvironment; // Fallback for unknown environments
+  } catch {
+    // If we can't check, assume we should try (for bare React Native)
+    return true;
+  }
+};
+
+// Safely check if Voice module is available
+const checkVoiceModuleAvailable = (): boolean => {
+  if (VoiceLoadAttempted) {
+    return VoiceModule !== null;
   }
   
+  // Don't even try in Expo Go
+  if (!isModuleEnvironment()) {
+    VoiceLoadAttempted = true;
+    VoiceModule = null;
+    return false;
+  }
+  
+  VoiceLoadAttempted = true;
+  
+  // Only attempt require if we're in a compatible environment
   try {
     VoiceModule = require('@react-native-voice/voice');
-    VoiceLoaded = true;
-    return VoiceModule;
+    return VoiceModule !== null;
   } catch (e) {
-    // Module not available (Expo Go limitation)
-    VoiceLoaded = true; // Mark as loaded to prevent repeated attempts
     VoiceModule = null;
-    return null;
+    return false;
   }
 };
 
 const getVoice = (): any => {
-  const module = getVoiceModule();
-  if (!module) return null;
-  return module.default || module;
+  if (!checkVoiceModuleAvailable() || !VoiceModule) {
+    return null;
+  }
+  return VoiceModule.default || VoiceModule;
 };
 
 export type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking' | 'error';
@@ -44,63 +69,80 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
   const [isSupported, setIsSupported] = useState(false);
   const recognitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check if voice recognition is supported
+  // Check if voice recognition is supported - defer module loading
   useEffect(() => {
+    // Check availability first without loading the module
+    if (!checkVoiceModuleAvailable()) {
+      setIsSupported(false);
+      return;
+    }
+
+    // Now safely get the Voice module
     const Voice = getVoice();
     if (!Voice) {
       setIsSupported(false);
       return;
     }
 
-    Voice.isAvailable()
-      .then((available: boolean) => {
-        setIsSupported(available);
-      })
-      .catch(() => {
-        setIsSupported(false);
-      });
+    // Set up availability check and event listeners
+    try {
+      Voice.isAvailable()
+        .then((available: boolean) => {
+          setIsSupported(available);
+        })
+        .catch(() => {
+          setIsSupported(false);
+        });
 
-    // Set up event listeners
-    Voice.onSpeechStart = () => {
-      setStatus('listening');
-      setError(null);
-    };
+      // Set up event listeners
+      Voice.onSpeechStart = () => {
+        setStatus('listening');
+        setError(null);
+      };
 
-    Voice.onSpeechEnd = () => {
-      setStatus('processing');
-    };
+      Voice.onSpeechEnd = () => {
+        setStatus('processing');
+      };
 
-    Voice.onSpeechResults = (e: any) => {
-      if (e.value && e.value.length > 0) {
-        const text = e.value[0];
-        const parsed = parseVoiceCommand(text);
-        
-        if (parsed.action.type !== 'unknown') {
-          onCommand?.(parsed);
-        } else {
-          speak('Sorry, I didn\'t understand that command.');
-          setError('Command not recognized');
+      Voice.onSpeechResults = (e: any) => {
+        if (e.value && e.value.length > 0) {
+          const text = e.value[0];
+          const parsed = parseVoiceCommand(text);
+          
+          if (parsed.action.type !== 'unknown') {
+            onCommand?.(parsed);
+          } else {
+            speak('Sorry, I didn\'t understand that command.');
+            setError('Command not recognized');
+          }
+          
+          setStatus('idle');
         }
-        
-        setStatus('idle');
-      }
-    };
+      };
 
-    Voice.onSpeechError = (e: any) => {
-      console.error('Speech recognition error:', e.error);
-      setError(e.error?.message || 'Speech recognition failed');
-      setStatus('error');
-      
-      // Auto-reset after error
-      setTimeout(() => {
-        setStatus('idle');
-      }, 2000);
-    };
+      Voice.onSpeechError = (e: any) => {
+        console.error('Speech recognition error:', e.error);
+        setError(e.error?.message || 'Speech recognition failed');
+        setStatus('error');
+        
+        // Auto-reset after error
+        setTimeout(() => {
+          setStatus('idle');
+        }, 2000);
+      };
+    } catch (e) {
+      console.warn('Voice module setup failed:', e);
+      setIsSupported(false);
+    }
 
     return () => {
-      const Voice = getVoice();
-      if (Voice) {
-        Voice.destroy().then(() => Voice.removeAllListeners?.()).catch(() => {});
+      try {
+        const Voice = getVoice();
+        if (Voice) {
+          Voice.destroy().then(() => Voice.removeAllListeners?.()).catch(() => {});
+        }
+      } catch (e) {
+        // Ignore cleanup errors
       }
       if (recognitionTimeoutRef.current) {
         clearTimeout(recognitionTimeoutRef.current);
