@@ -59,44 +59,10 @@ export function VoiceControlButton({
   const buttonSize = getButtonSize();
   const isActive = status === 'listening';
 
-  // Show a disabled/informative button if not supported (for development builds)
-  // In Expo Go, we'll hide it completely
+  // Hide button if not supported (Expo Go limitation)
+  // The hook already handles the module availability check
   if (!isSupported) {
-    // Check if it's Expo Go limitation (Voice module not available)
-    try {
-      require('@react-native-voice/voice');
-      // Module exists but not supported on device - show disabled button
-      return (
-        <View style={styles.container}>
-          <TouchableOpacity
-            disabled
-            style={[
-              styles.button,
-              {
-                width: buttonSize.width,
-                height: buttonSize.height,
-                backgroundColor: theme.colors.surfaceAlt,
-                borderColor: theme.colors.border,
-                opacity: 0.5,
-              },
-            ]}>
-            <FontAwesome
-              name="microphone-slash"
-              size={buttonSize.icon}
-              color={theme.colors.muted}
-            />
-          </TouchableOpacity>
-          {error && (
-            <Text style={[styles.errorText, { color: theme.colors.muted }]} numberOfLines={2}>
-              Not available
-            </Text>
-          )}
-        </View>
-      );
-    } catch {
-      // Module doesn't exist (Expo Go) - don't show button
-      return null;
-    }
+    return null;
   }
 
   return (

@@ -3,20 +3,32 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { findCounterByName, parseVoiceCommand, ParsedCommand } from '@/lib/voiceCommands';
 
-// Dynamically import Voice to handle Expo Go compatibility
-let Voice: any = null;
-let SpeechErrorEvent: any = null;
-let SpeechResultsEvent: any = null;
+// Lazy load Voice module to handle Expo Go compatibility
+let VoiceModule: any = null;
+let VoiceLoaded = false;
 
-try {
-  const voiceModule = require('@react-native-voice/voice');
-  Voice = voiceModule.default || voiceModule;
-  SpeechErrorEvent = voiceModule.SpeechErrorEvent;
-  SpeechResultsEvent = voiceModule.SpeechResultsEvent;
-} catch (e) {
-  // Module not available (Expo Go limitation)
-  console.warn('Voice recognition not available in Expo Go. Requires development build.');
-}
+const getVoiceModule = (): any => {
+  if (VoiceLoaded) {
+    return VoiceModule;
+  }
+  
+  try {
+    VoiceModule = require('@react-native-voice/voice');
+    VoiceLoaded = true;
+    return VoiceModule;
+  } catch (e) {
+    // Module not available (Expo Go limitation)
+    VoiceLoaded = true; // Mark as loaded to prevent repeated attempts
+    VoiceModule = null;
+    return null;
+  }
+};
+
+const getVoice = (): any => {
+  const module = getVoiceModule();
+  if (!module) return null;
+  return module.default || module;
+};
 
 export type VoiceStatus = 'idle' | 'listening' | 'processing' | 'speaking' | 'error';
 
@@ -34,6 +46,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
 
   // Check if voice recognition is supported
   useEffect(() => {
+    const Voice = getVoice();
     if (!Voice) {
       setIsSupported(false);
       return;
@@ -85,6 +98,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
     };
 
     return () => {
+      const Voice = getVoice();
       if (Voice) {
         Voice.destroy().then(() => Voice.removeAllListeners?.()).catch(() => {});
       }
@@ -95,6 +109,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
   }, [onCommand]);
 
   const startListening = useCallback(async () => {
+    const Voice = getVoice();
     if (!enabled || !isSupported || !Voice) {
       setError('Voice recognition not available. Requires development build.');
       return;
@@ -107,6 +122,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
       // Auto-stop after 5 seconds of listening
       recognitionTimeoutRef.current = setTimeout(async () => {
         try {
+          const Voice = getVoice();
           if (Voice) {
             await Voice.stop();
           }
@@ -122,6 +138,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
   }, [enabled, isSupported]);
 
   const stopListening = useCallback(async () => {
+    const Voice = getVoice();
     if (!Voice) return;
     
     try {
@@ -165,7 +182,7 @@ export function useVoiceCommand(options: UseVoiceCommandOptions = {}) {
     speak,
     message: isSupported
       ? 'Tap and speak your command'
-      : Voice
+      : getVoice()
         ? 'Voice recognition not available on this device'
         : 'Voice commands require a development build (not available in Expo Go)',
   };
