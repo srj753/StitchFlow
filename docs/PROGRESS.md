@@ -1,4 +1,4 @@
-# Implementation Progress
+alr wh# Implementation Progress
 
 **Last Updated:** December 2024  
 **Current Status:** ✅ Phase 1, 2.1, 2.2, 2.3, 2.4, 2.5 Part A, 2.6 Part A, 2.7 Part B Complete | ⏸️ Phase 2.5 Part B Paused (Requires Dev Build) | 🔄 Phase 2.7 Part A In Progress | ✨ Phase 2.3 Part C Enhanced (AI Pattern Parsing)
@@ -697,13 +697,20 @@ Each agent can work independently on their assigned part without conflicts.
 
 ---
 
-## 🐛 Known Issues
+## 🐛 Known Issues & Active Checklist
 
-- **AI Pattern Extraction (PDF & Image):** ⚠️ **ENHANCED & PARTIALLY FUNCTIONAL**. The Groq Vision model (`llama-3.2-90b-vision-preview`) may be unstable. Text-based parsing with `llama-3.1-70b-versatile` is fully functional. Enhanced with detailed system instructions (adapted from StitchFlow AI Studio) and improved JSON parsing. The UI and logic (multi-image support, transcription pipeline) are fully implemented. **Status:** Users should test with their Groq API keys. Falls back to regex extraction if AI fails.
-- **Web App Interactivity:** Some web-specific issues remain, prioritized for mobile-first development
-- **Voice Commands:** ✅ Part A implemented but requires **development build** (not available in Expo Go). The feature gracefully degrades in Expo Go without crashing the app. **Part B is paused** until development build environment is available.
+See `docs/CHECKLIST_REMAINING.md` for the detailed granular task list.
 
+### Critical
+- **iOS Crash:** App crashes on Projects page in dev build.
+- **UI Glitches:** Navbar overlap in AI mode, Studio/Diagram loading issues.
+- **User Flow:** Cannot "unfinish" a project; "Add Preset" in project detail broken.
+
+### Deferred / Platform-Specific
+- **AI Pattern Extraction:** Text parsing works (Groq), Vision/PDF partially functional.
+- **Widgets:** Native iOS/Android widgets are deferred (require native code).
+- **Voice Commands:** Advanced voice features paused (require dev build).
 
 ---
 
-**Last Commit:** `a5e0346` - feat: redesign counter presets picker, add community tabs, and improve advanced filters
+**Last Commit:** `f59bea0` - feat: enhance AI pattern parsing with detailed system instructions

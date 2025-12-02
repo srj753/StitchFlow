@@ -39,6 +39,8 @@ export default function PublishProjectScreen() {
   const [includePattern, setIncludePattern] = useState(false);
   const [includeJournal, setIncludeJournal] = useState(true);
   const [includeStudio, setIncludeStudio] = useState(true);
+  const [sellPattern, setSellPattern] = useState(false);
+  const [price, setPrice] = useState('');
 
   const handlePublish = () => {
     // Mock publish action
@@ -200,8 +202,8 @@ export default function PublishProjectScreen() {
              <View style={styles.includeInfo}>
                <FontAwesome name="link" size={16} color={theme.colors.text} style={styles.includeIcon} />
                <View>
-                 <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Link Pattern</Text>
-                 <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Allow others to find this pattern</Text>
+                 <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Link Pattern Source</Text>
+                 <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Help others find the pattern you used</Text>
                </View>
              </View>
              <Switch
@@ -210,6 +212,38 @@ export default function PublishProjectScreen() {
                trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
              />
           </View>
+        )}
+
+        {/* Sell Pattern Option (Stub) */}
+        <View style={[styles.toggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
+           <View style={styles.includeInfo}>
+             <FontAwesome name="shopping-bag" size={16} color={theme.colors.text} style={styles.includeIcon} />
+             <View>
+               <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Sell Your Pattern?</Text>
+               <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>List your original design on the store</Text>
+             </View>
+           </View>
+           <Switch
+             value={sellPattern}
+             onValueChange={setSellPattern}
+             trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+           />
+        </View>
+
+        {sellPattern && (
+          <Card title="Price" style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 18, color: theme.colors.text, marginRight: 8 }}>$</Text>
+              <TextInput
+                style={[styles.priceInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceAlt }]}
+                placeholder="0.00"
+                placeholderTextColor={theme.colors.muted}
+                keyboardType="decimal-pad"
+                value={price}
+                onChangeText={setPrice}
+              />
+            </View>
+          </Card>
         )}
 
         <TouchableOpacity
@@ -312,6 +346,12 @@ const styles = StyleSheet.create({
     padding: 12,
     height: 100,
     textAlignVertical: 'top',
+    fontSize: 16,
+  },
+  priceInput: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 12,
     fontSize: 16,
   },
   includeRow: {

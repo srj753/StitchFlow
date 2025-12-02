@@ -1,0 +1,26 @@
+Projects page:
+Better project card
+
+Project[id]:
+Fix the nav bar when ai is activated
+Studio doesnt work or diagram doesnt work either 
+after finishing i cant unfinish the project (what if i accidentally pressed finish) after finishing the project counters to be moved down and other stuff up 
+add preset to counter still doesnt work
+
+patterns page:
+the card should be clickable to open the pattern (eye button is a lil too small people expect to click the card)
+create pattern form needs a redesign (better looking as in fitting the ui of other app components) and the form also needs a redesign right now its too cluttered and back from create pattern or profile page doesnt work
+gonna work on import patterns and voice features later
+the widgets on ios doesnt work as well
+havent testd on android
+on dev build on ios the app crashes as soon as i open projects page
+pattern store logo isnt valid so displays ?
+lets finish working on the community as well
+also when publishing post ask if they want to share pattern or not and how much to charge or something idk mane 
+patterns feature dont work still so needs fixing later not now same with voice 
+
+
+we should start on the backend once we are done with the community tab and fixing all the bugs ive listed for now 
+
+project card should be completely redesigned i dont like the look of it right now
+

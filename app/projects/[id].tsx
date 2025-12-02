@@ -183,7 +183,7 @@ export default function ProjectDetailScreen() {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>Edit Project</Text>
                         </TouchableOpacity>
                         
-                        {project.status !== 'finished' && (
+                        {project.status !== 'finished' ? (
                           <>
                             <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
                             <TouchableOpacity 
@@ -195,6 +195,21 @@ export default function ProjectDetailScreen() {
                             >
                                 <FontAwesome name="check-circle" size={14} color={theme.colors.accent} style={styles.menuIcon} />
                                 <Text style={[styles.menuText, { color: theme.colors.text }]}>Finish Project</Text>
+                            </TouchableOpacity>
+                          </>
+                        ) : (
+                          <>
+                            <View style={[styles.menuDivider, { backgroundColor: theme.colors.border }]} />
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    setShowMenu(false);
+                                    updateProjectStatus(project.id, 'active');
+                                    showSuccess("Project reactivated!");
+                                }}
+                            >
+                                <FontAwesome name="undo" size={14} color={theme.colors.text} style={styles.menuIcon} />
+                                <Text style={[styles.menuText, { color: theme.colors.text }]}>Unfinish / Reactivate</Text>
                             </TouchableOpacity>
                           </>
                         )}

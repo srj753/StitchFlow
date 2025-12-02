@@ -333,11 +333,6 @@ export function TrackView({ project }: TrackViewProps) {
 
   return (
     <View style={styles.container}>
-      {/* Changed ScrollView to View to avoid nesting issues, relying on parent Screen scroll */}
-      {/* But wait, if parent scrolls, the content inside must not be scrollable or conflicting */}
-      {/* However, to ensure proper layout, we keep it simple. Screen handles scroll. */}
-      {/* We just render content. */}
-      
       <View style={styles.content}>
         
         {/* Hero Dashboard Card */}
@@ -388,17 +383,19 @@ export function TrackView({ project }: TrackViewProps) {
                 )}
                 
                 <View style={styles.heroActions}>
-                     <TouchableOpacity
-                        onPress={() => {
-                            const newStatus = project.status === 'active' ? 'paused' : 'active';
-                            updateProjectStatus(project.id, newStatus);
-                        }}
-                        style={[styles.heroButton, { backgroundColor: theme.colors.surfaceAlt }]}
-                     >
-                        <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
-                            {project.status === 'active' ? 'Pause' : 'Resume'}
-                        </Text>
-                     </TouchableOpacity>
+                     {project.status !== 'finished' && (
+                       <TouchableOpacity
+                          onPress={() => {
+                              const newStatus = project.status === 'active' ? 'paused' : 'active';
+                              updateProjectStatus(project.id, newStatus);
+                          }}
+                          style={[styles.heroButton, { backgroundColor: theme.colors.surfaceAlt }]}
+                       >
+                          <Text style={{ color: theme.colors.text, fontWeight: '600' }}>
+                              {project.status === 'active' ? 'Pause' : 'Resume'}
+                          </Text>
+                       </TouchableOpacity>
+                     )}
                      
                      {project.status !== 'finished' && (
                         <TouchableOpacity
@@ -414,431 +411,507 @@ export function TrackView({ project }: TrackViewProps) {
                              onPress={handlePublish}
                              style={[styles.heroButton, { backgroundColor: theme.colors.accent }]}
                          >
-                              <Text style={{ color: '#000', fontWeight: '700' }}>Share</Text>
+                              <Text style={{ color: '#000', fontWeight: '700' }}>Share Project</Text>
                          </TouchableOpacity>
                      )}
                 </View>
              </View>
         </View>
 
-        {/* Counters Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>COUNTERS</Text>
-          
-          {linkedGroups.map((groupIds, groupIndex) => {
-            const groupCounters = project.counters.filter((c) => groupIds.includes(c.id));
-            if (groupCounters.length < 2) return null;
-
-            return (
-              <LinkedCounterGroup
-                key={`linked-${groupIndex}`}
-                counters={groupCounters}
-                linkedIds={groupIds}
-                onIncrement={(counterId, delta) => {
-                  const counter = project.counters.find((c) => c.id === counterId);
-                  if (counter) {
-                    const newValue = counter.currentValue + delta;
-                    updateCounter(project.id, counterId, newValue);
-                  }
-                }}
-                onSetValue={(counterId, value) => {
-                  updateCounter(project.id, counterId, value);
-                }}
-                onUnlink={(counterId) => {
-                  const counter = project.counters.find((c) => c.id === counterId);
-                  Alert.alert(
-                    'Unlink Counter',
-                    `Are you sure you want to unlink "${counter?.label}"? It will no longer be grouped with other linked counters.`,
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Unlink',
-                        style: 'destructive',
-                        onPress: () => {
-                          unlinkCounter(project.id, counterId);
-                          showSuccess('Counter unlinked');
-                        },
-                      },
-                    ]
-                  );
-                }}
-              />
-            );
-          })}
-
-          {unlinkedCounters.map((counter) => {
-            const isLinked = counter.linkedCounterIds && counter.linkedCounterIds.length > 0;
-            return (
-              <Counter
-                key={counter.id}
-                counter={counter}
-                isLinked={isLinked}
-                onIncrement={(delta) => {
-                  const newValue = counter.currentValue + delta;
-                  updateCounter(project.id, counter.id, newValue);
-                }}
-                onSetValue={(value) => updateCounter(project.id, counter.id, value)}
-                onRename={(label) => {
-                  updateCounterLabel(project.id, counter.id, label);
-                  showSuccess('Counter renamed');
-                }}
-                onLink={() => {
-                  setSelectedCounterForLinking(counter.id);
-                  setSelectedCountersToLink(new Set());
-                  setShowLinkModal(true);
-                }}
-                onDelete={
-                  project.counters.length > 1
-                    ? () => {
-                        deleteCounter(project.id, counter.id);
-                        showSuccess('Counter removed');
-                      }
-                    : undefined
-                }
-              />
-            );
-          })}
-
-          <View style={styles.addCounterRow}>
-            <TouchableOpacity
-              onPress={() => {
-                addCounter(project.id, {
-                  type: 'custom',
-                  label: `Counter ${project.counters.length + 1}`,
-                  currentValue: 0,
-                });
-                showSuccess('Counter added');
-              }}
-              style={[
-                styles.addCounterButton,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surfaceAlt,
-                },
-              ]}>
-              <FontAwesome name="plus" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
-              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
-                Add Counter
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={() => setShowPresetPicker(true)}
-              style={[
-                styles.addCounterButton,
-                {
-                  borderColor: theme.colors.accent,
-                  backgroundColor: theme.colors.accentMuted,
-                },
-              ]}>
-              <FontAwesome name="magic" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
-              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
-                Preset
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Voice Control */}
-          {/* Only show voice control if not in Expo Go */}
-          {/* In Expo Go, the module doesn't exist, so we skip rendering to avoid errors */}
-          {Constants.executionEnvironment === 'standalone' || Constants.executionEnvironment === 'bare' ? (
-            <View style={[styles.voiceControlContainer, { backgroundColor: theme.colors.surface }]}>
-              <Text style={[styles.voiceControlLabel, { color: theme.colors.textSecondary }]}>
-                Voice Control
-              </Text>
-              <VoiceControlButton
-                onCommand={handleVoiceCommand}
-                enabled={true}
-                size="medium"
-              />
-            </View>
-          ) : null}
-          
-          <CounterPresetPicker
-            visible={showPresetPicker}
-            onClose={() => setShowPresetPicker(false)}
-            onSelect={(preset) => {
-              preset.counters.forEach((counterConfig) => {
-                addCounter(project.id, {
-                  type: counterConfig.type,
-                  label: counterConfig.label,
-                  currentValue: 0,
-                  targetValue: counterConfig.targetValue,
-                });
-              });
-              // Record preset usage for analytics
-              const recordUsage = useCounterPresetsStore.getState().recordUsage;
-              recordUsage(preset.id, project.patternName || undefined);
-              showSuccess(`${preset.name} preset applied`);
-            }}
-          />
-        </View>
-
-        <View style={styles.section}>
-           <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>NOTES</Text>
-           <View style={[styles.notesContainer, { backgroundColor: theme.colors.surface }]}>
-               <View style={styles.notesTabs}>
-                    {['pattern', 'progress'].map((tab) => {
-                    const selected = activeNotesTab === tab;
-                    const label = tab === 'pattern' ? 'Pattern' : 'Progress';
-                    return (
-                        <TouchableOpacity
-                        key={tab}
-                        onPress={() => setActiveNotesTab(tab as 'pattern' | 'progress')}
-                        style={[
-                            styles.notesTab,
-                            {
-                            borderBottomWidth: 2,
-                            borderColor: selected ? theme.colors.accent : 'transparent',
-                            },
-                        ]}>
-                        <Text
-                            style={{
-                            color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                            fontWeight: '700',
-                            fontSize: 14,
-                            }}>
-                            {label}
-                        </Text>
-                        </TouchableOpacity>
-                    );
-                    })}
-                </View>
-                <TextInput
-                    multiline
-                    numberOfLines={6}
-                    value={activeNotesTab === 'pattern' ? patternNotesDraft : progressNotesDraft}
-                    onChangeText={activeNotesTab === 'pattern' ? setPatternNotesDraft : setProgressNotesDraft}
-                    onBlur={activeNotesTab === 'pattern' ? handleSavePatternNotes : handleSaveProgressNotes}
-                    placeholder={activeNotesTab === 'pattern' ? "Stitch substitutions, sizing tweaks..." : "Row checkpoints, reminders..."}
-                    placeholderTextColor={theme.colors.muted}
-                    style={[
-                        styles.textArea,
-                        {
-                        color: theme.colors.text,
-                        },
-                    ]}
-                />
-           </View>
-        </View>
-
-        {/* Yarn & Stash Section - Redesigned */}
-        <View style={styles.section}>
-           <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>YARN & MATERIALS</Text>
-              <TouchableOpacity 
-                 onPress={handleOpenYarnModal} 
-                 disabled={stashEmpty || !canLinkYarn}
-                 style={{ opacity: stashEmpty || !canLinkYarn ? 0.5 : 1 }}
-              >
-                  <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Link Yarn</Text>
-              </TouchableOpacity>
-           </View>
-
-          {project.linkedYarns.length === 0 ? (
-             <EmptyState
-               compact
-               icon={{ name: 'inbox', size: 32 }}
-               title="No yarn linked"
-               description="Link yarn from your stash to track usage in this project."
-               actionLabel="Link Yarn"
-               onAction={() => setShowYarnModal(true)}
-             />
-          ) : (
-            <View style={styles.yarnList}>
-              {project.linkedYarns.map((link) => {
-                const yarn = yarnMap[link.yarnId];
-                const available =
-                  yarn !== undefined
-                    ? Math.max(0, yarn.skeinsOwned - yarn.skeinsReserved + link.skeinsUsed)
-                    : 0;
-                return (
-                  <View
-                    key={link.id}
-                    style={[
-                      styles.yarnRow,
-                      {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.border,
-                      },
-                    ]}>
-                    <View style={styles.yarnMetaRow}>
-                      <View
-                        style={[
-                          styles.yarnSwatch,
-                          {
-                            borderColor: theme.colors.border,
-                            backgroundColor: yarn?.colorHex ?? theme.colors.cardMuted,
-                          },
-                        ]}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.yarnName, { color: theme.colors.text }]}>
-                          {yarn?.name ?? 'Missing yarn'}
-                        </Text>
-                        <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
-                          {(yarn?.brand ?? 'Unknown brand')}
-                        </Text>
-                      </View>
-                      <TouchableOpacity onPress={() => handleRemoveLink(link.id)} style={styles.iconButton}>
-                          <FontAwesome name="trash-o" size={18} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                    
-                    {/* Skein Control */}
-                    <View style={[styles.skeinControl, { backgroundColor: theme.colors.surfaceAlt }]}>
-                         <Text style={{ color: theme.colors.textSecondary, fontSize: 12, flex: 1 }}>Used in project:</Text>
-                         <TextInput
-                          value={String(link.skeinsUsed)}
-                          onChangeText={(text) => handleLinkedAmountChange(link.id, text)}
-                          keyboardType="numeric"
-                          style={[
-                            styles.skeinInput,
-                            {
-                              color: theme.colors.text,
-                            },
-                          ]}
-                        />
-                        <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>skeins</Text>
-                    </View>
+        {/* Reordered Content based on Status */}
+        {project.status === 'finished' ? (
+            <>
+               {/* Photos First when finished */}
+               <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                     <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>FINAL PHOTOS</Text>
+                     <TouchableOpacity onPress={handleAddPhoto} disabled={isLoadingPhoto}>
+                         <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Add Photo</Text>
+                     </TouchableOpacity>
                   </View>
-                );
-              })}
-            </View>
-          )}
-        </View>
+                 
+                 {isLoadingPhoto && <LoadingSpinner overlay />}
+                 
+                 {project.photos.length === 0 ? (
+                   <EmptyState
+                     compact
+                     icon={{ name: 'camera', size: 32 }}
+                     title="No photos yet"
+                     description="Document your finished project!"
+                     actionLabel="Add Photo"
+                     onAction={handleAddPhoto}
+                   />
+                 ) : (
+                   <ScrollView
+                     horizontal
+                     showsHorizontalScrollIndicator={false}
+                     contentContainerStyle={styles.photoRow}>
+                     {project.photos.map((uri, index) => (
+                       <View key={uri} style={styles.photoItem}>
+                         <TouchableOpacity
+                           onPress={() => {
+                             setLightboxIndex(index);
+                             setLightboxVisible(true);
+                           }}
+                           style={[styles.photoContainer, { borderColor: theme.colors.border }]}
+                         >
+                           <Image source={{ uri }} style={styles.photoImage} />
+                           <TouchableOpacity
+                               onPress={() => handleRemovePhoto(uri)}
+                               style={styles.photoDeleteBadge}
+                           >
+                               <FontAwesome name="times" size={12} color="#fff" />
+                           </TouchableOpacity>
+                         </TouchableOpacity>
+                       </View>
+                     ))}
+                   </ScrollView>
+                 )}
+               </View>
 
-        {/* Photos Section - Redesigned */}
-        <View style={styles.section}>
-           <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>PHOTOS</Text>
-              <TouchableOpacity onPress={handleAddPhoto} disabled={isLoadingPhoto}>
-                  <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Add Photo</Text>
-              </TouchableOpacity>
-           </View>
-          
-          {isLoadingPhoto && <LoadingSpinner overlay />}
-          
-          {project.photos.length === 0 ? (
-            <EmptyState
-              compact
-              icon={{ name: 'camera', size: 32 }}
-              title="No photos yet"
-              description="Document your progress by adding photos of your work."
-              actionLabel="Add Photo"
-              onAction={handleAddPhoto}
-            />
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photoRow}>
-              {project.photos.map((uri, index) => (
-                <View key={uri} style={styles.photoItem}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setLightboxIndex(index);
-                      setLightboxVisible(true);
-                    }}
-                    style={[styles.photoContainer, { borderColor: theme.colors.border }]}
-                  >
-                    <Image source={{ uri }} style={styles.photoImage} />
-                    <TouchableOpacity
-                        onPress={() => handleRemovePhoto(uri)}
-                        style={styles.photoDeleteBadge}
-                    >
-                        <FontAwesome name="times" size={12} color="#fff" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
+               <View style={[styles.section, { marginBottom: 40 }]}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>JOURNAL & NOTES</Text>
+                  {project.journal.length > 0 ? (
+                    <View style={styles.journalList}>
+                      {project.journal.map((entry) => (
+                        <JournalEntry
+                          key={entry.id}
+                          entry={entry}
+                          onDelete={() => {
+                            deleteJournalEntry(project.id, entry.id);
+                            showSuccess('Entry removed');
+                          }}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <EmptyState
+                      compact
+                      icon={{ name: 'book', size: 32 }}
+                      title="No journal entries"
+                      description="Add notes about your project journey."
+                    />
+                  )}
+               </View>
+            </>
+        ) : (
+            <>
+                {/* Active Project Order */}
+                
+                {/* Counters Section */}
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>COUNTERS</Text>
+                  
+                  {linkedGroups.map((groupIds, groupIndex) => {
+                    const groupCounters = project.counters.filter((c) => groupIds.includes(c.id));
+                    if (groupCounters.length < 2) return null;
 
-        {/* Journal Section - Redesigned */}
-        <View style={[styles.section, { marginBottom: 40 }]}>
-           <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>JOURNAL</Text>
-           
-           {/* Add Note Input */}
-           <View style={[styles.journalInputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-                <TextInput
-                value={journalText}
-                onChangeText={setJournalText}
-                placeholder="Log a thought or milestone..."
-                placeholderTextColor={theme.colors.muted}
-                multiline
-                style={[
-                    styles.journalInput,
-                    {
-                    color: theme.colors.text,
-                    },
-                ]}
-                />
-                <View style={styles.journalActionRow}>
-                    <TouchableOpacity
-                        onPress={() => {
-                        const currentCounters = project.counters;
-                        const rowCounter = currentCounters.find((c) => c.type === 'row');
-                        addJournalEntry(project.id, {
-                            type: 'milestone',
-                            text: journalText.trim() || 'Milestone reached!',
-                            metadata: {
-                            roundsCompleted: rowCounter?.currentValue,
-                            heightAchieved: project.currentHeightInches,
-                            },
-                        });
-                        setJournalText('');
-                        showSuccess('Milestone logged!');
+                    return (
+                      <LinkedCounterGroup
+                        key={`linked-${groupIndex}`}
+                        counters={groupCounters}
+                        linkedIds={groupIds}
+                        onIncrement={(counterId, delta) => {
+                          const counter = project.counters.find((c) => c.id === counterId);
+                          if (counter) {
+                            const newValue = counter.currentValue + delta;
+                            updateCounter(project.id, counterId, newValue);
+                          }
                         }}
-                        style={styles.journalIconAction}
-                    >
-                        <FontAwesome name="flag-o" size={16} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
-                    
-                    <View style={{ flex: 1 }} />
-                    
-                    <TouchableOpacity
-                        onPress={() => {
-                        if (journalText.trim()) {
-                            addJournalEntry(project.id, {
-                            type: 'note',
-                            text: journalText.trim(),
-                            });
-                            setJournalText('');
-                            showSuccess('Note added');
+                        onSetValue={(counterId, value) => {
+                          updateCounter(project.id, counterId, value);
+                        }}
+                        onUnlink={(counterId) => {
+                          const counter = project.counters.find((c) => c.id === counterId);
+                          Alert.alert(
+                            'Unlink Counter',
+                            `Are you sure you want to unlink "${counter?.label}"?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Unlink',
+                                style: 'destructive',
+                                onPress: () => {
+                                  unlinkCounter(project.id, counterId);
+                                  showSuccess('Counter unlinked');
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                      />
+                    );
+                  })}
+
+                  {unlinkedCounters.map((counter) => {
+                    const isLinked = counter.linkedCounterIds && counter.linkedCounterIds.length > 0;
+                    return (
+                      <Counter
+                        key={counter.id}
+                        counter={counter}
+                        isLinked={isLinked}
+                        onIncrement={(delta) => {
+                          const newValue = counter.currentValue + delta;
+                          updateCounter(project.id, counter.id, newValue);
+                        }}
+                        onSetValue={(value) => updateCounter(project.id, counter.id, value)}
+                        onRename={(label) => {
+                          updateCounterLabel(project.id, counter.id, label);
+                          showSuccess('Counter renamed');
+                        }}
+                        onLink={() => {
+                          setSelectedCounterForLinking(counter.id);
+                          setSelectedCountersToLink(new Set());
+                          setShowLinkModal(true);
+                        }}
+                        onDelete={
+                          project.counters.length > 1
+                            ? () => {
+                                deleteCounter(project.id, counter.id);
+                                showSuccess('Counter removed');
+                              }
+                            : undefined
                         }
-                        }}
-                        style={[styles.postButton, { backgroundColor: theme.colors.surfaceAlt }]}
-                    >
-                        <Text style={{ color: theme.colors.text, fontWeight: '600', fontSize: 12 }}>Post</Text>
-                    </TouchableOpacity>
-                </View>
-           </View>
+                      />
+                    );
+                  })}
 
-          {project.journal.length > 0 ? (
-            <View style={styles.journalList}>
-              {project.journal.map((entry) => (
-                <JournalEntry
-                  key={entry.id}
-                  entry={entry}
-                  onDelete={() => {
-                    deleteJournalEntry(project.id, entry.id);
-                    showSuccess('Entry removed');
-                  }}
-                />
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              compact
-              icon={{ name: 'book', size: 32 }}
-              title="No journal entries yet"
-              description="Add notes, milestones, or progress updates to track your journey."
-            />
-          )}
-        </View>
+                  <View style={styles.addCounterRow}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        addCounter(project.id, {
+                          type: 'custom',
+                          label: `Counter ${project.counters.length + 1}`,
+                          currentValue: 0,
+                        });
+                        showSuccess('Counter added');
+                      }}
+                      style={[
+                        styles.addCounterButton,
+                        {
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.surfaceAlt,
+                        },
+                      ]}>
+                      <FontAwesome name="plus" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
+                      <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
+                        Add Counter
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      onPress={() => setShowPresetPicker(true)}
+                      style={[
+                        styles.addCounterButton,
+                        {
+                          borderColor: theme.colors.accent,
+                          backgroundColor: theme.colors.accentMuted,
+                        },
+                      ]}>
+                      <FontAwesome name="magic" size={14} color={theme.colors.accent} style={{ marginRight: 8 }} />
+                      <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>
+                        Preset
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Voice Control */}
+                  {Constants.executionEnvironment === 'standalone' || Constants.executionEnvironment === 'bare' ? (
+                    <View style={[styles.voiceControlContainer, { backgroundColor: theme.colors.surface }]}>
+                      <Text style={[styles.voiceControlLabel, { color: theme.colors.textSecondary }]}>
+                        Voice Control
+                      </Text>
+                      <VoiceControlButton
+                        onCommand={handleVoiceCommand}
+                        enabled={true}
+                        size="medium"
+                      />
+                    </View>
+                  ) : null}
+                  
+                  <CounterPresetPicker
+                    visible={showPresetPicker}
+                    onClose={() => setShowPresetPicker(false)}
+                    onSelect={(preset) => {
+                      preset.counters.forEach((counterConfig) => {
+                        addCounter(project.id, {
+                          type: counterConfig.type,
+                          label: counterConfig.label,
+                          currentValue: 0,
+                          targetValue: counterConfig.targetValue,
+                        });
+                      });
+                      const recordUsage = useCounterPresetsStore.getState().recordUsage;
+                      recordUsage(preset.id, project.patternName || undefined);
+                      showSuccess(`${preset.name} preset applied`);
+                    }}
+                  />
+                </View>
+
+                {/* Notes Section */}
+                <View style={styles.section}>
+                   <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>NOTES</Text>
+                   <View style={[styles.notesContainer, { backgroundColor: theme.colors.surface }]}>
+                       <View style={styles.notesTabs}>
+                            {['pattern', 'progress'].map((tab) => {
+                            const selected = activeNotesTab === tab;
+                            const label = tab === 'pattern' ? 'Pattern' : 'Progress';
+                            return (
+                                <TouchableOpacity
+                                key={tab}
+                                onPress={() => setActiveNotesTab(tab as 'pattern' | 'progress')}
+                                style={[
+                                    styles.notesTab,
+                                    {
+                                    borderBottomWidth: 2,
+                                    borderColor: selected ? theme.colors.accent : 'transparent',
+                                    },
+                                ]}>
+                                <Text
+                                    style={{
+                                    color: selected ? theme.colors.accent : theme.colors.textSecondary,
+                                    fontWeight: '700',
+                                    fontSize: 14,
+                                    }}>
+                                    {label}
+                                </Text>
+                                </TouchableOpacity>
+                            );
+                            })}
+                        </View>
+                        <TextInput
+                            multiline
+                            numberOfLines={6}
+                            value={activeNotesTab === 'pattern' ? patternNotesDraft : progressNotesDraft}
+                            onChangeText={activeNotesTab === 'pattern' ? setPatternNotesDraft : setProgressNotesDraft}
+                            onBlur={activeNotesTab === 'pattern' ? handleSavePatternNotes : handleSaveProgressNotes}
+                            placeholder={activeNotesTab === 'pattern' ? "Stitch substitutions, sizing tweaks..." : "Row checkpoints, reminders..."}
+                            placeholderTextColor={theme.colors.muted}
+                            style={[
+                                styles.textArea,
+                                {
+                                color: theme.colors.text,
+                                },
+                            ]}
+                        />
+                   </View>
+                </View>
+
+                {/* Yarn Section */}
+                <View style={styles.section}>
+                   <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>YARN & MATERIALS</Text>
+                      <TouchableOpacity 
+                         onPress={handleOpenYarnModal} 
+                         disabled={stashEmpty || !canLinkYarn}
+                         style={{ opacity: stashEmpty || !canLinkYarn ? 0.5 : 1 }}
+                      >
+                          <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Link Yarn</Text>
+                      </TouchableOpacity>
+                   </View>
+
+                  {project.linkedYarns.length === 0 ? (
+                     <EmptyState
+                       compact
+                       icon={{ name: 'inbox', size: 32 }}
+                       title="No yarn linked"
+                       description="Link yarn from your stash to track usage."
+                       actionLabel="Link Yarn"
+                       onAction={() => setShowYarnModal(true)}
+                     />
+                  ) : (
+                    <View style={styles.yarnList}>
+                      {project.linkedYarns.map((link) => {
+                        const yarn = yarnMap[link.yarnId];
+                        return (
+                          <View
+                            key={link.id}
+                            style={[
+                              styles.yarnRow,
+                              {
+                                backgroundColor: theme.colors.surface,
+                                borderColor: theme.colors.border,
+                              },
+                            ]}>
+                            <View style={styles.yarnMetaRow}>
+                              <View
+                                style={[
+                                  styles.yarnSwatch,
+                                  {
+                                    borderColor: theme.colors.border,
+                                    backgroundColor: yarn?.colorHex ?? theme.colors.cardMuted,
+                                  },
+                                ]}
+                              />
+                              <View style={{ flex: 1 }}>
+                                <Text style={[styles.yarnName, { color: theme.colors.text }]}>
+                                  {yarn?.name ?? 'Missing yarn'}
+                                </Text>
+                                <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
+                                  {(yarn?.brand ?? 'Unknown brand')}
+                                </Text>
+                              </View>
+                              <TouchableOpacity onPress={() => handleRemoveLink(link.id)} style={styles.iconButton}>
+                                  <FontAwesome name="trash-o" size={18} color={theme.colors.textSecondary} />
+                              </TouchableOpacity>
+                            </View>
+                            
+                            <View style={[styles.skeinControl, { backgroundColor: theme.colors.surfaceAlt }]}>
+                                 <Text style={{ color: theme.colors.textSecondary, fontSize: 12, flex: 1 }}>Used in project:</Text>
+                                 <TextInput
+                                  value={String(link.skeinsUsed)}
+                                  onChangeText={(text) => handleLinkedAmountChange(link.id, text)}
+                                  keyboardType="numeric"
+                                  style={[
+                                    styles.skeinInput,
+                                    {
+                                      color: theme.colors.text,
+                                    },
+                                  ]}
+                                />
+                                <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>skeins</Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                {/* Photos Section (Lower for active) */}
+                <View style={styles.section}>
+                   <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>PHOTOS</Text>
+                      <TouchableOpacity onPress={handleAddPhoto} disabled={isLoadingPhoto}>
+                          <Text style={{ color: theme.colors.accent, fontWeight: '600', fontSize: 13 }}>+ Add Photo</Text>
+                      </TouchableOpacity>
+                   </View>
+                  
+                  {isLoadingPhoto && <LoadingSpinner overlay />}
+                  
+                  {project.photos.length === 0 ? (
+                    <EmptyState
+                      compact
+                      icon={{ name: 'camera', size: 32 }}
+                      title="No photos yet"
+                      description="Document your progress."
+                      actionLabel="Add Photo"
+                      onAction={handleAddPhoto}
+                    />
+                  ) : (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.photoRow}>
+                      {project.photos.map((uri, index) => (
+                        <View key={uri} style={styles.photoItem}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setLightboxIndex(index);
+                              setLightboxVisible(true);
+                            }}
+                            style={[styles.photoContainer, { borderColor: theme.colors.border }]}
+                          >
+                            <Image source={{ uri }} style={styles.photoImage} />
+                            <TouchableOpacity
+                                onPress={() => handleRemovePhoto(uri)}
+                                style={styles.photoDeleteBadge}
+                            >
+                                <FontAwesome name="times" size={12} color="#fff" />
+                            </TouchableOpacity>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+
+                {/* Journal Section (Lower for active) */}
+                <View style={[styles.section, { marginBottom: 40 }]}>
+                   <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>JOURNAL</Text>
+                   
+                   <View style={[styles.journalInputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                        <TextInput
+                        value={journalText}
+                        onChangeText={setJournalText}
+                        placeholder="Log a thought or milestone..."
+                        placeholderTextColor={theme.colors.muted}
+                        multiline
+                        style={[
+                            styles.journalInput,
+                            {
+                            color: theme.colors.text,
+                            },
+                        ]}
+                        />
+                        <View style={styles.journalActionRow}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                const currentCounters = project.counters;
+                                const rowCounter = currentCounters.find((c) => c.type === 'row');
+                                addJournalEntry(project.id, {
+                                    type: 'milestone',
+                                    text: journalText.trim() || 'Milestone reached!',
+                                    metadata: {
+                                    roundsCompleted: rowCounter?.currentValue,
+                                    heightAchieved: project.currentHeightInches,
+                                    },
+                                });
+                                setJournalText('');
+                                showSuccess('Milestone logged!');
+                                }}
+                                style={styles.journalIconAction}
+                            >
+                                <FontAwesome name="flag-o" size={16} color={theme.colors.textSecondary} />
+                            </TouchableOpacity>
+                            
+                            <View style={{ flex: 1 }} />
+                            
+                            <TouchableOpacity
+                                onPress={() => {
+                                if (journalText.trim()) {
+                                    addJournalEntry(project.id, {
+                                    type: 'note',
+                                    text: journalText.trim(),
+                                    });
+                                    setJournalText('');
+                                    showSuccess('Note added');
+                                }
+                                }}
+                                style={[styles.postButton, { backgroundColor: theme.colors.surfaceAlt }]}
+                            >
+                                <Text style={{ color: theme.colors.text, fontWeight: '600', fontSize: 12 }}>Post</Text>
+                            </TouchableOpacity>
+                        </View>
+                   </View>
+
+                  {project.journal.length > 0 ? (
+                    <View style={styles.journalList}>
+                      {project.journal.map((entry) => (
+                        <JournalEntry
+                          key={entry.id}
+                          entry={entry}
+                          onDelete={() => {
+                            deleteJournalEntry(project.id, entry.id);
+                            showSuccess('Entry removed');
+                          }}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <EmptyState
+                      compact
+                      icon={{ name: 'book', size: 32 }}
+                      title="No journal entries yet"
+                      description="Add notes, milestones, or progress updates."
+                    />
+                  )}
+                </View>
+            </>
+        )}
+
       </View>
+
 
       {/* Modals remain the same */}
       <Modal visible={showYarnModal} transparent animationType="fade" onRequestClose={handleCloseYarnModal}>

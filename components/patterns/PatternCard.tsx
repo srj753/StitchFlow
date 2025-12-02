@@ -42,7 +42,11 @@ export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCa
 
   return (
     <SlideUp delay={index * 50} duration={300}>
-      <View style={[styles.container, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.shadow }]}>
+      <TouchableOpacity 
+        activeOpacity={0.9}
+        onPress={onPreview}
+        style={[styles.container, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.shadow }]}
+      >
         {/* Top Decoration Bar */}
         <LinearGradient
           colors={gradientColors}
@@ -111,16 +115,19 @@ export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCa
 
              {/* Action Buttons */}
              <View style={styles.actions}>
-                <TouchableOpacity onPress={onPreview} style={[styles.iconBtn, { backgroundColor: theme.colors.surfaceAlt }]}>
-                   <FontAwesome name="eye" size={14} color={theme.colors.text} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onSave} style={[styles.addBtn, { backgroundColor: theme.colors.text }]}>
+                <TouchableOpacity 
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onSave();
+                  }} 
+                  style={[styles.addBtn, { backgroundColor: theme.colors.text }]}
+                >
                    <Text style={[styles.addBtnText, { color: theme.colors.background }]}>Use</Text>
                 </TouchableOpacity>
              </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </SlideUp>
   );
 }

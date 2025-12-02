@@ -101,7 +101,7 @@ export default function CommunityScreen() {
             },
           ]}>
           <FontAwesome
-            name="store"
+            name="shopping-bag"
             size={14}
             color={activeTab === 'store' ? '#000' : theme.colors.textSecondary}
             style={{ marginRight: 6 }}
