@@ -55,6 +55,7 @@ export function CounterPresetPicker({ visible, onClose, onSelect }: CounterPrese
   const handleAddToProject = () => {
     if (selectedPreset) {
       onSelect(selectedPreset);
+      setSelectedPreset(null); // Reset selection
       onClose();
     }
   };

@@ -223,11 +223,13 @@ export function DiagramsView({ project }: DiagramsViewProps) {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      scrollEnabled={true}
-      nestedScrollEnabled={true}
-    >
+    <View style={{ flex: 1 }}>
+      <ScrollView 
+        style={styles.container}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
       {/* Diagram Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -280,7 +282,8 @@ export function DiagramsView({ project }: DiagramsViewProps) {
           gridSize={20}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
