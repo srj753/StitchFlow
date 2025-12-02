@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 250,
-    zIndex: 0,
+    zIndex: 1,
   },
   headerImage: {
     width: '100%',
@@ -368,13 +368,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 16,
-    zIndex: 20, // Ensure header is above overlay
+    zIndex: 100, // Ensure header stays on top of all content
+    position: 'relative',
   },
   headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
-    zIndex: 20,
+    zIndex: 101, // Above header background
   },
   iconButton: {
     width: 40,

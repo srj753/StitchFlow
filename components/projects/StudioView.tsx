@@ -14,7 +14,12 @@ export function StudioView({ project }: StudioViewProps) {
   const palette = project.colorPalette || [];
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+    <View style={{ flex: 1 }}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.content}
+        style={{ flex: 1 }}
+      >
       {/* Palette Section */}
       <Card title="Palette" subtitle="Yarn colors" style={styles.card}>
         <View style={styles.paletteGrid}>
@@ -63,7 +68,8 @@ export function StudioView({ project }: StudioViewProps) {
            </View>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

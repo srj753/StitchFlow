@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
@@ -130,13 +131,22 @@ export default function CreatePatternScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={[styles.backButton, { backgroundColor: theme.colors.surfaceAlt }]}
+        >
+          <FontAwesome name="arrow-left" size={16} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.topBarTitle, { color: theme.colors.text }]}>Create Pattern</Text>
+        <View style={{ width: 40 }} />
+      </View>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Pattern maker</Text>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Structure your own drops</Text>
+          <Text style={[styles.title, { color: theme.colors.text }]}>Structure your own pattern</Text>
           <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-            Capture materials, stitch counts, and live instructions. Drafts auto-save locally, so you
-            can hop between tabs without losing work.
+            Drafts auto-save locally as you work.
           </Text>
         </View>
 
@@ -570,14 +580,35 @@ function LabeledField({
 }
 
 const styles = StyleSheet.create({
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topBarTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
   container: {
     paddingBottom: 48,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
+    paddingHorizontal: 16,
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 24,
+    marginHorizontal: 16,
   },
   eyebrow: {
     textTransform: 'uppercase',
