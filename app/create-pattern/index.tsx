@@ -430,7 +430,7 @@ function SectionEditor({
   themeColors: ReturnType<typeof useTheme>['colors'];
 }) {
   return (
-    <View style={[styles.sectionCard, { borderColor: themeColors.border }]}>
+    <View style={[styles.sectionCard, { borderColor: themeColors.border, backgroundColor: themeColors.surface }]}>
       <View style={styles.sectionHeader}>
         <TextInput
           value={section.name}
@@ -499,7 +499,7 @@ function SectionEditor({
               {
                 color: themeColors.text,
                 borderColor: themeColors.border,
-                backgroundColor: themeColors.surfaceAlt,
+                backgroundColor: themeColors.surface,
               },
             ]}
           />
@@ -513,7 +513,7 @@ function SectionEditor({
               {
                 color: themeColors.text,
                 borderColor: themeColors.border,
-                backgroundColor: themeColors.surfaceAlt,
+                backgroundColor: themeColors.surface,
               },
             ]}
           />
@@ -531,7 +531,7 @@ function SectionEditor({
               styles.quickChip,
               {
                 borderColor: themeColors.border,
-                backgroundColor: themeColors.surfaceAlt,
+                backgroundColor: themeColors.surface,
               },
             ]}>
             <Text style={{ color: themeColors.textSecondary }}>{template.label}</Text>
@@ -543,7 +543,7 @@ function SectionEditor({
             styles.quickChip,
             {
               borderColor: themeColors.border,
-              backgroundColor: themeColors.surfaceAlt,
+              backgroundColor: themeColors.surface,
             },
           ]}>
           <Text style={{ color: themeColors.accent }}>+ Custom row</Text>
