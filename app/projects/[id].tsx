@@ -351,8 +351,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 250,
+    height: 180,
     zIndex: 1,
+    overflow: 'hidden',
   },
   headerImage: {
     width: '100%',
@@ -370,6 +371,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     zIndex: 100, // Ensure header stays on top of all content
     position: 'relative',
+    backgroundColor: 'transparent',
   },
   headerTopRow: {
     flexDirection: 'row',

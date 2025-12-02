@@ -205,8 +205,8 @@ export function DiagramsView({ project }: DiagramsViewProps) {
 
   if (!currentDiagram) {
     return (
-      <ScrollView style={styles.container}>
-        <View style={styles.emptyContainer}>
+      <View style={{ flex: 1 }}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.emptyContainer}>
           <FontAwesome name="pencil" size={48} color={theme.colors.muted} />
           <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
             Create your first diagram to start drawing.
@@ -217,8 +217,8 @@ export function DiagramsView({ project }: DiagramsViewProps) {
             <FontAwesome name="plus" size={16} color="#000" />
             <Text style={styles.createButtonText}>Create Diagram</Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     );
   }
 

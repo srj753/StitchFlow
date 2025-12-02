@@ -1,4 +1,3 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
@@ -131,16 +130,6 @@ export default function CreatePatternScreen() {
 
   return (
     <Screen>
-      <View style={styles.topBar}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={[styles.backButton, { backgroundColor: theme.colors.surfaceAlt }]}
-        >
-          <FontAwesome name="arrow-left" size={16} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { color: theme.colors.text }]}>Create Pattern</Text>
-        <View style={{ width: 40 }} />
-      </View>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Pattern maker</Text>
@@ -160,7 +149,7 @@ export default function CreatePatternScreen() {
                 placeholderTextColor={theme.colors.muted}
                 style={[
                   styles.input,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, color: theme.colors.text },
+                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text },
                 ]}
               />
             </LabeledField>
@@ -175,11 +164,11 @@ export default function CreatePatternScreen() {
               style={[
                 styles.input,
                 styles.multiline,
-                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, color: theme.colors.text },
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text },
               ]}
             />
           </LabeledField>
-          <Text style={[styles.helper, { color: theme.colors.muted }]}>Difficulty</Text>
+          <Text style={[styles.helper, { color: theme.colors.textSecondary }]}>Difficulty</Text>
           <View style={styles.chipRow}>
             {difficultyOptions.map((option) => {
               const selected = draft.difficulty === option;
@@ -191,7 +180,7 @@ export default function CreatePatternScreen() {
                     styles.chip,
                     {
                       borderColor: selected ? theme.colors.accent : theme.colors.border,
-                      backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
+                      backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surface,
                     },
                   ]}>
                   <Text
@@ -214,7 +203,7 @@ export default function CreatePatternScreen() {
                 placeholderTextColor={theme.colors.muted}
                 style={[
                   styles.input,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, color: theme.colors.text },
+                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text },
                 ]}
               />
             </LabeledField>
@@ -226,7 +215,7 @@ export default function CreatePatternScreen() {
                 placeholderTextColor={theme.colors.muted}
                 style={[
                   styles.input,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, color: theme.colors.text },
+                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text },
                 ]}
               />
             </LabeledField>
@@ -239,11 +228,11 @@ export default function CreatePatternScreen() {
               placeholderTextColor={theme.colors.muted}
               style={[
                 styles.input,
-                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, color: theme.colors.text },
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text },
               ]}
             />
           </LabeledField>
-          <Text style={[styles.helper, { color: theme.colors.muted }]}>Tags</Text>
+          <Text style={[styles.helper, { color: theme.colors.textSecondary }]}>Tags</Text>
           <View style={styles.tagRow}>
             {draft.tags.map((tag) => (
               <TouchableOpacity
@@ -251,7 +240,7 @@ export default function CreatePatternScreen() {
                 onPress={() => removeTag(tag)}
                 style={[
                   styles.tag,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
+                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
                 ]}>
                 <Text style={{ color: theme.colors.text }}>{tag}</Text>
                 <Text style={{ color: theme.colors.muted, marginLeft: 6 }}>×</Text>
@@ -260,7 +249,7 @@ export default function CreatePatternScreen() {
             <View
               style={[
                 styles.tagInputWrapper,
-                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
               ]}>
               <TextInput
                 value={tagInput}
@@ -275,7 +264,7 @@ export default function CreatePatternScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          <Text style={[styles.helper, { color: theme.colors.muted, marginTop: 12 }]}>Palette</Text>
+          <Text style={[styles.helper, { color: theme.colors.textSecondary, marginTop: 12 }]}>Palette</Text>
           <View style={styles.paletteRow}>
             {draft.palette.map((color, index) => (
               <TouchableOpacity
@@ -293,7 +282,7 @@ export default function CreatePatternScreen() {
                 style={[
                   styles.paletteSwatch,
                   styles.paletteSwatchDashed,
-                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt },
+                  { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
                 ]}>
                 <Text style={{ color: theme.colors.textSecondary }}>+</Text>
               </TouchableOpacity>
@@ -321,7 +310,7 @@ export default function CreatePatternScreen() {
               styles.addSectionButton,
               {
                 borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
+                backgroundColor: theme.colors.surface,
               },
             ]}>
             <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>+ Add section</Text>
@@ -334,7 +323,7 @@ export default function CreatePatternScreen() {
               styles.previewBox,
               {
                 borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
+                backgroundColor: theme.colors.surface,
               },
             ]}>
             {previewLines.map((line, index) => (
@@ -365,6 +354,7 @@ export default function CreatePatternScreen() {
                 styles.secondaryButton,
                 {
                   borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface,
                 },
               ]}>
               <Text style={{ color: theme.colors.text }}>Send to Projects</Text>
@@ -391,6 +381,7 @@ export default function CreatePatternScreen() {
                 styles.controlButton,
                 {
                   borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface,
                 },
               ]}>
               <Text style={{ color: theme.colors.textSecondary }}>Reset draft</Text>
@@ -401,6 +392,7 @@ export default function CreatePatternScreen() {
                 styles.controlButton,
                 {
                   borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface,
                 },
               ]}>
               <Text style={{ color: theme.colors.textSecondary }}>Browse pattern library</Text>
@@ -580,34 +572,16 @@ function LabeledField({
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  topBarTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
   container: {
     paddingBottom: 48,
   },
   header: {
     marginBottom: 24,
     paddingHorizontal: 16,
+    paddingTop: 16,
   },
   card: {
-    marginBottom: 24,
+    marginBottom: 20,
     marginHorizontal: 16,
   },
   eyebrow: {
