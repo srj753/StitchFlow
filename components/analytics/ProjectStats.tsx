@@ -73,7 +73,8 @@ function StatCard({
 const styles = StyleSheet.create({
   container: {
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
   row: {
     flexDirection: 'row',
@@ -101,6 +102,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   }
 });
+
 
 
 

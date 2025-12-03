@@ -15,10 +15,9 @@ export function WeeklyActivityChart({ data }: { data: WeeklyProgressData[] }) {
       
       <View style={styles.chartContainer}>
         {data.map((item, index) => {
-          // Mock data if empty for skeleton visuals
-          // Remove this in production when real data is flowing
-          const displayCount = item.count || Math.floor(Math.random() * 5) + 1; 
-          const heightPercent = (displayCount / 5) * 100; // Scale to mock max 5
+          const displayCount = item.count || 0;
+          const maxCount = Math.max(...data.map(d => d.count), 1);
+          const heightPercent = maxCount > 0 ? (displayCount / maxCount) * 100 : 0;
           
           return (
             <View key={index} style={styles.barColumn}>
@@ -29,7 +28,7 @@ export function WeeklyActivityChart({ data }: { data: WeeklyProgressData[] }) {
                     { 
                       height: `${heightPercent}%`,
                       backgroundColor: theme.colors.accent,
-                      opacity: index === data.length - 1 ? 1 : 0.6 
+                      opacity: displayCount > 0 ? (index === data.length - 1 ? 1 : 0.6) : 0.2
                     }
                   ]} 
                 />
@@ -46,8 +45,9 @@ export function WeeklyActivityChart({ data }: { data: WeeklyProgressData[] }) {
 const styles = StyleSheet.create({
   card: {
     padding: 20,
-    borderRadius: 24,
-    marginBottom: 24,
+    borderRadius: 20,
+    marginBottom: 16,
+    marginHorizontal: 16,
   },
   title: {
     fontSize: 18,
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   }
 });
+
 
 
 

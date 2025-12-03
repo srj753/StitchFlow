@@ -21,43 +21,45 @@ export default function ProfileScreen() {
   const weeklyActivity = useMemo(() => calculateWeeklyActivity(projects), [projects]);
 
   return (
-    <Screen scrollable={false}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Profile</Text>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Your maker stats</Text>
-          <Text style={[styles.body, { color: theme.colors.textSecondary }]}>
-            Track your progress, streaks, and habits.
-          </Text>
-        </View>
+    <Screen scrollable={true}>
+      <View style={styles.header}>
+        <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Profile</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Your maker stats</Text>
+        <Text style={[styles.body, { color: theme.colors.textSecondary }]}>
+          Track your progress, streaks, and habits.
+        </Text>
+      </View>
 
-        <ProjectStatsView stats={projectStats} />
-        
-        <WeeklyActivityChart data={weeklyActivity} />
+      <ProjectStatsView stats={projectStats} />
+      
+      <WeeklyActivityChart data={weeklyActivity} />
 
-        <Card title="Library Stats">
+      <Card title="Library Stats" style={styles.card}>
+        <View style={styles.statsContainer}>
           <Stat label="Total Projects" value={projectStats.total} />
           <Stat label="Imported Patterns" value={patterns.length} />
-          <Stat label="Stash Entries" value={yarns.length} />
-        </Card>
+          <Stat label="Stash Entries" value={yarns.length} isLast />
+        </View>
+      </Card>
 
-        <Card title="Coming soon">
-          <Text style={{ color: theme.colors.textSecondary, marginBottom: 8 }}>
-            We’re planning:
+      <Card title="Coming soon" style={styles.card}>
+        <View style={styles.comingSoonContainer}>
+          <Text style={[styles.comingSoonText, { color: theme.colors.textSecondary }]}>
+            We're planning:
           </Text>
           <Bullet text="Cross-device sync & backups" />
           <Bullet text="Shareable project pages" />
           <Bullet text="Community challenges and testers" />
-        </Card>
-      </ScrollView>
+        </View>
+      </Card>
     </Screen>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, isLast }: { label: string; value: number; isLast?: boolean }) {
   const theme = useTheme();
   return (
-    <View style={styles.stat}>
+    <View style={[styles.stat, isLast && styles.statLast]}>
       <Text style={[styles.statValue, { color: theme.colors.text }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>{label}</Text>
     </View>
@@ -76,7 +78,7 @@ function Bullet({ text }: { text: string }) {
 
 const styles = StyleSheet.create({
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
     gap: 8,
   },
   eyebrow: {
@@ -92,10 +94,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  card: {
+    marginBottom: 16,
+  },
+  statsContainer: {
+    gap: 12,
+  },
   stat: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(150, 150, 150, 0.1)',
+  },
+  statLast: {
+    borderBottomWidth: 0,
   },
   statValue: {
     fontSize: 20,
@@ -104,15 +118,22 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 14,
   },
+  comingSoonContainer: {
+    gap: 12,
+  },
+  comingSoonText: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: 12,
+    paddingVertical: 4,
   },
   bulletDot: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     borderRadius: 999,
   },
 });
