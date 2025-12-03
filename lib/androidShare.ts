@@ -74,7 +74,7 @@ export async function shareContent(
       // Sharing text content
       // Note: expo-sharing primarily handles files, so for text we'd need
       // to use React Native's Share API or create a temporary file
-      const { Share } = require('react-native');
+      const { Share } = await import('react-native');
       await Share.share(
         {
           message: options.url ? `${content}\n${options.url}` : content,
