@@ -32,7 +32,7 @@ export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCa
     } else if (palette.length === 1) {
       return [palette[0], palette[0]]; // Solid gradient
     }
-    
+
     // Fallback to difficulty colors
     const difficultyKey = pattern.difficulty?.toLowerCase() || 'default';
     return difficultyColors[difficultyKey] || difficultyColors.default;
@@ -42,14 +42,14 @@ export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCa
 
   return (
     <SlideUp delay={index * 50} duration={300}>
-      <TouchableOpacity 
-        activeOpacity={0.9}
+      <TouchableOpacity
+        activeOpacity={0.85}
         onPress={onPreview}
         style={[styles.container, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.shadow }]}
       >
         {/* Top Decoration Bar */}
         <LinearGradient
-          colors={gradientColors}
+          colors={gradientColors as [string, string]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.colorBar}
@@ -66,7 +66,7 @@ export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCa
                 by {pattern.designer}
               </Text>
             </View>
-            
+
             {/* Difficulty Badge */}
             <View style={[styles.badge, { backgroundColor: theme.colors.surfaceAlt }]}>
               <Text style={[styles.badgeText, { color: theme.colors.text }]}>
@@ -90,41 +90,41 @@ export function PatternCard({ pattern, onPreview, onSave, index = 0 }: PatternCa
 
           {/* Footer: Palette & Actions */}
           <View style={styles.footer}>
-             {/* Mini Palette */}
-             <View style={styles.palette}>
-                {palette.map((color, i) => (
-                  <View 
-                    key={i} 
-                    style={[
-                      styles.swatch, 
-                      { 
-                        backgroundColor: color, 
-                        borderColor: theme.colors.surface, // Match card background for cutout effect
-                        zIndex: 10 - i, 
-                        marginLeft: i === 0 ? 0 : -8 
-                      }
-                    ]} 
-                  />
-                ))}
-                {palette.length === 0 && (
-                  <Text style={{ color: theme.colors.muted, fontSize: 12, fontStyle: 'italic' }}>
-                    No palette
-                  </Text>
-                )}
-             </View>
+            {/* Mini Palette */}
+            <View style={styles.palette}>
+              {palette.map((color, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.swatch,
+                    {
+                      backgroundColor: color,
+                      borderColor: theme.colors.surface, // Match card background for cutout effect
+                      zIndex: 10 - i,
+                      marginLeft: i === 0 ? 0 : -8
+                    }
+                  ]}
+                />
+              ))}
+              {palette.length === 0 && (
+                <Text style={{ color: theme.colors.muted, fontSize: 12, fontStyle: 'italic' }}>
+                  No palette
+                </Text>
+              )}
+            </View>
 
-             {/* Action Buttons */}
-             <View style={styles.actions}>
-                <TouchableOpacity 
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    onSave();
-                  }} 
-                  style={[styles.addBtn, { backgroundColor: theme.colors.text }]}
-                >
-                   <Text style={[styles.addBtnText, { color: theme.colors.background }]}>Use</Text>
-                </TouchableOpacity>
-             </View>
+            {/* Action Buttons */}
+            <View style={styles.actions}>
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onSave();
+                }}
+                style={[styles.addBtn, { backgroundColor: theme.colors.text }]}
+              >
+                <Text style={[styles.addBtnText, { color: theme.colors.background }]}>Use</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </TouchableOpacity>

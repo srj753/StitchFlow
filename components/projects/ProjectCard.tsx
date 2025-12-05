@@ -4,11 +4,11 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback, useMemo } from 'react';
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import { SlideUp } from '@/components/animations/SlideUp';
@@ -69,109 +69,142 @@ export const ProjectCard = memo(function ProjectCard({
   }, [onPress, project.id, setActiveProject]);
 
   const hasImage = !!project.thumbnail;
+
   // Generate a stable gradient based on project ID if no image
   const gradientColors = useMemo(() => {
-     const gradients = [
-        ['#F472B6', '#DB2777'], // Pink
-        ['#60A5FA', '#2563EB'], // Blue
-        ['#34D399', '#059669'], // Green
-        ['#A78BFA', '#7C3AED'], // Purple
-        ['#FBBF24', '#D97706'], // Amber
-     ];
-     const idx = project.id.charCodeAt(0) % gradients.length;
-     return gradients[idx];
+    const gradients = [
+      ['#F472B6', '#DB2777'], // Pink
+      ['#60A5FA', '#2563EB'], // Blue
+      ['#34D399', '#059669'], // Green
+      ['#A78BFA', '#7C3AED'], // Purple
+      ['#FBBF24', '#D97706'], // Amber
+      ['#FB7185', '#E11D48'], // Rose
+      ['#22D3EE', '#0891B2'], // Cyan
+    ];
+    const idx = project.id.charCodeAt(0) % gradients.length;
+    return gradients[idx];
   }, [project.id]);
 
+  // Get status color
+  const getStatusColor = () => {
+    if (isActive) return theme.colors.accent;
+    if (project.status === 'finished') return '#22c55e';
+    if (project.status === 'paused') return theme.colors.muted;
+    return theme.colors.textSecondary;
+  };
+
+  const getStatusLabel = () => {
+    if (isActive) return 'Active';
+    if (project.status === 'finished') return 'Done';
+    if (project.status === 'paused') return 'Paused';
+    return 'In Progress';
+  };
+
   return (
-    <SlideUp delay={index * 50} duration={400}>
+    <SlideUp delay={index * 50} duration={350}>
       <TouchableOpacity
         onPress={handleOpen}
-        activeOpacity={0.95}
+        activeOpacity={0.92}
         style={[
           styles.container,
           {
             backgroundColor: theme.colors.surface,
-            borderColor: isActive ? theme.colors.accent : 'transparent',
+            borderColor: isActive ? theme.colors.accent : theme.colors.border,
             shadowColor: theme.colors.shadow,
           },
         ]}>
-        
-        {/* Top Section: Image/Header */}
-        <View style={styles.headerContainer}>
-           {hasImage ? (
-             <Image source={{ uri: project.thumbnail }} style={styles.heroImage} />
-           ) : (
-             <LinearGradient
-               colors={gradientColors as any}
-               start={{ x: 0, y: 0 }}
-               end={{ x: 1, y: 1 }}
-               style={styles.placeholderGradient}
-             >
-               <FontAwesome name="heart-o" size={32} color="rgba(255,255,255,0.8)" />
-             </LinearGradient>
-           )}
-           
-           {/* Status Badge */}
-           <View style={[styles.statusBadge, { backgroundColor: isActive ? theme.colors.accent : 'rgba(0,0,0,0.6)' }]}>
-              <Text style={styles.statusText}>
-                {isActive ? 'Active' : project.status === 'finished' ? 'Finished' : 'Paused'}
-              </Text>
-           </View>
 
-           {/* Progress Bar (Bottom of Header) */}
-           <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.accent }]} />
-           </View>
-        </View>
+        {/* Horizontal Layout */}
+        <View style={styles.horizontalLayout}>
 
-        {/* Content Section */}
-        <View style={styles.content}>
-           <View style={styles.mainInfo}>
-              <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
-                {project.name}
-              </Text>
-              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                {project.patternName || 'Custom Project'}
-              </Text>
-              
-              <View style={styles.metaRow}>
-                <FontAwesome name="clock-o" size={12} color={theme.colors.textSecondary} />
-                <Text style={[styles.metaText, { color: theme.colors.textSecondary }]}>
-                  {lastUpdated}
+          {/* Left: Image/Gradient */}
+          <View style={styles.imageContainer}>
+            {hasImage ? (
+              <Image source={{ uri: project.thumbnail }} style={styles.image} />
+            ) : (
+              <LinearGradient
+                colors={gradientColors as any}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientPlaceholder}
+              >
+                <FontAwesome name="heart-o" size={24} color="rgba(255,255,255,0.9)" />
+              </LinearGradient>
+            )}
+
+            {/* Progress Overlay Ring */}
+            {progress > 0 && (
+              <View style={styles.progressRingContainer}>
+                <View style={[styles.progressRingBg, { borderColor: 'rgba(255,255,255,0.3)' }]}>
+                  <Text style={styles.progressRingText}>{Math.round(progress)}%</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Right: Content */}
+          <View style={styles.content}>
+            {/* Status Badge */}
+            <View style={styles.topRow}>
+              <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor()}20` }]}>
+                <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+                <Text style={[styles.statusText, { color: getStatusColor() }]}>
+                  {getStatusLabel()}
                 </Text>
-                {project.timeSpentMinutes > 0 && (
-                  <>
-                    <Text style={[styles.metaDot, { color: theme.colors.border }]}>•</Text>
-                    <Text style={[styles.metaText, { color: theme.colors.textSecondary }]}>
-                      {Math.floor(project.timeSpentMinutes / 60)}h {project.timeSpentMinutes % 60}m
-                    </Text>
-                  </>
-                )}
               </View>
-           </View>
+              <Text style={[styles.timeText, { color: theme.colors.muted }]}>
+                {lastUpdated}
+              </Text>
+            </View>
 
-           {/* Quick Counter Action */}
-           <View style={styles.counterAction}>
-              <View style={styles.counterDisplay}>
-                 <Text style={[styles.counterLabel, { color: theme.colors.textSecondary }]}>
-                    {rowCounter?.label || 'Row'}
-                 </Text>
-                 <Text style={[styles.counterValue, { color: theme.colors.text }]}>
+            {/* Title & Pattern */}
+            <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
+              {project.name}
+            </Text>
+            <Text style={[styles.patternName, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+              {project.patternName || 'Custom Project'}
+            </Text>
+
+            {/* Bottom: Counter + Action */}
+            <View style={styles.bottomRow}>
+              <View style={styles.counterInfo}>
+                <Text style={[styles.counterLabel, { color: theme.colors.muted }]}>
+                  {rowCounter?.label || 'Row'}
+                </Text>
+                <View style={styles.counterValueRow}>
+                  <Text style={[styles.counterValue, { color: theme.colors.text }]}>
                     {rowCounter?.currentValue || 0}
-                    {rowCounter?.targetValue ? <Text style={{color: theme.colors.muted}}>/{rowCounter.targetValue}</Text> : ''}
-                 </Text>
+                  </Text>
+                  {rowCounter?.targetValue && (
+                    <Text style={[styles.counterTarget, { color: theme.colors.muted }]}>
+                      /{rowCounter.targetValue}
+                    </Text>
+                  )}
+                </View>
               </View>
-              
+
+              {/* Quick Increment FAB */}
               <TouchableOpacity
                 style={[styles.fab, { backgroundColor: theme.colors.accent }]}
                 onPress={(e) => {
-                   e.stopPropagation(); // Prevent opening card
-                   handleQuickAdjust(1);
+                  e.stopPropagation();
+                  handleQuickAdjust(1);
                 }}
               >
-                 <FontAwesome name="plus" size={16} color="#fff" />
+                <FontAwesome name="plus" size={14} color="#000" />
               </TouchableOpacity>
-           </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Progress Bar at Bottom */}
+        <View style={[styles.progressBarTrack, { backgroundColor: theme.colors.surfaceAlt }]}>
+          <View
+            style={[
+              styles.progressBarFill,
+              { width: `${progress}%`, backgroundColor: theme.colors.accent }
+            ]}
+          />
         </View>
       </TouchableOpacity>
     </SlideUp>
@@ -180,117 +213,145 @@ export const ProjectCard = memo(function ProjectCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 16,
     overflow: 'hidden',
-    elevation: 3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent', // Overridden if active
   },
-  headerContainer: {
-    height: 140,
+  horizontalLayout: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 14,
+  },
+  imageContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#f0f0f0',
   },
-  heroImage: {
+  image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  placeholderGradient: {
+  gradientPlaceholder: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statusBadge: {
+  progressRingContainer: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    bottom: 6,
+    right: 6,
   },
-  statusText: {
+  progressRingBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressRingText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  progressTrack: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-  },
-  progressFill: {
-    height: '100%',
   },
   content: {
-    padding: 16,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 6,
   },
-  mainInfo: {
-    flex: 1,
-    paddingRight: 16,
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 5,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  timeText: {
+    fontSize: 10,
+    fontWeight: '500',
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    marginBottom: 4,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metaText: {
-    fontSize: 12,
-  },
-  metaDot: {
-    fontSize: 12,
-  },
-  counterAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  counterDisplay: {
-    alignItems: 'flex-end',
-  },
-  counterLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    letterSpacing: -0.3,
     marginBottom: 2,
   },
+  patternName: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  counterInfo: {
+    gap: 2,
+  },
+  counterLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  counterValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   counterValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
+  counterTarget: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   fab: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
+  },
+  progressBarTrack: {
+    height: 3,
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
   },
 });

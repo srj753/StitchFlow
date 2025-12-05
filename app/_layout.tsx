@@ -1,11 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
+import * as Linking from 'expo-linking';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -23,8 +23,8 @@ function TabBarIcon(props: {
 }
 
 export {
-    // Catch any errors thrown by the Layout component.
-    ErrorBoundary
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -115,126 +115,129 @@ function RootLayoutNav() {
     }
   };
 
+  // On web, GestureHandlerRootView can intercept clicks. Use a plain View instead.
+  const RootWrapper = isWeb ? View : GestureHandlerRootView;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <RootWrapper style={{ flex: 1 }}>
       <ToastProvider>
         <ThemeProvider value={effectiveScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Tabs
-        initialRouteName="home/index"
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: true,
-          tabBarActiveTintColor: theme.colors.accent, // Use dynamic accent color
-          tabBarInactiveTintColor: theme.colors.muted,
-          tabBarStyle: isWeb ? undefined : {
-            position: 'absolute',
-            bottom: 24,
-            left: 24,
-            right: 24,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: theme.colors.surface,
-            borderTopWidth: 0,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.1,
-            shadowRadius: 20,
-            elevation: 10,
-            paddingBottom: 8,
-            paddingTop: 8,
-          },
-          tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: '600',
-            marginTop: -4,
-          },
-        }}>
-        <Tabs.Screen
-          name="home/index"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="projects"
-          options={{
-            title: 'Projects',
-            tabBarIcon: ({ color }) => <TabBarIcon name="heart-o" color={color} />,
-            href: '/projects',
-          }}
-        />
-        <Tabs.Screen
-          name="patterns"
-          options={{
-            title: 'Patterns',
-            tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
-            href: '/patterns',
-          }}
-        />
-        <Tabs.Screen
-          name="community/index"
-          options={{
-            title: 'Community',
-            tabBarIcon: ({ color }) => <TabBarIcon name="users" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="community/publish"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="settings/index"
-          options={{
-            title: 'Settings',
-            tabBarIcon: ({ color}) => <TabBarIcon name="cog" color={color} />,
-          }}
-        />
-        
-        <Tabs.Screen
-          name="profile/index"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="create-pattern/index"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="index"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="+not-found"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="modal"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="+html"
-          options={{
-            href: null,
-          }}
-        />
-      </Tabs>
+            initialRouteName="home/index"
+            screenOptions={{
+              headerShown: false,
+              tabBarShowLabel: true,
+              tabBarActiveTintColor: theme.colors.accent, // Use dynamic accent color
+              tabBarInactiveTintColor: theme.colors.muted,
+              tabBarStyle: isWeb ? undefined : {
+                position: 'absolute',
+                bottom: 24,
+                left: 24,
+                right: 24,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: theme.colors.surface,
+                borderTopWidth: 0,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 20,
+                elevation: 10,
+                paddingBottom: 8,
+                paddingTop: 8,
+              },
+              tabBarLabelStyle: {
+                fontSize: 10,
+                fontWeight: '600',
+                marginTop: -4,
+              },
+            }}>
+            <Tabs.Screen
+              name="home/index"
+              options={{
+                title: 'Home',
+                tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+              }}
+            />
+            <Tabs.Screen
+              name="projects"
+              options={{
+                title: 'Projects',
+                tabBarIcon: ({ color }) => <TabBarIcon name="heart-o" color={color} />,
+                href: '/projects',
+              }}
+            />
+            <Tabs.Screen
+              name="patterns"
+              options={{
+                title: 'Patterns',
+                tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
+                href: '/patterns',
+              }}
+            />
+            <Tabs.Screen
+              name="community/index"
+              options={{
+                title: 'Community',
+                tabBarIcon: ({ color }) => <TabBarIcon name="users" color={color} />,
+              }}
+            />
+            <Tabs.Screen
+              name="community/publish"
+              options={{
+                href: null,
+              }}
+            />
+            <Tabs.Screen
+              name="settings/index"
+              options={{
+                title: 'Settings',
+                tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} />,
+              }}
+            />
+
+            <Tabs.Screen
+              name="profile/index"
+              options={{
+                href: null,
+              }}
+            />
+            <Tabs.Screen
+              name="create-pattern/index"
+              options={{
+                href: null,
+              }}
+            />
+            <Tabs.Screen
+              name="index"
+              options={{
+                href: null,
+              }}
+            />
+            <Tabs.Screen
+              name="+not-found"
+              options={{
+                href: null,
+              }}
+            />
+            <Tabs.Screen
+              name="modal"
+              options={{
+                href: null,
+              }}
+            />
+            <Tabs.Screen
+              name="+html"
+              options={{
+                href: null,
+              }}
+            />
+          </Tabs>
           <ToastManagerWrapper />
         </ThemeProvider>
       </ToastProvider>
-    </GestureHandlerRootView>
+    </RootWrapper>
   );
 }

@@ -99,3 +99,4 @@ export function calculateWeeklyActivity(projects: Project[]): WeeklyProgressData
 
 
 
+

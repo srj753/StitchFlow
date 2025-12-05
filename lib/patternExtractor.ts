@@ -412,3 +412,4 @@ function generateDescription(data: ExtractedPatternData, originalText: string): 
 
 
 
+

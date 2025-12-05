@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -24,7 +25,7 @@ export default function ImportPatternScreen() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
   const addPattern = usePatternStore((state) => state.addPattern);
-  
+
   // Settings for AI
   const { openaiApiKey, aiAssistantEnabled, aiProvider } = useSettingsStore();
 
@@ -52,7 +53,7 @@ export default function ImportPatternScreen() {
     try {
       setExtractionProgress(0.5); // AI Processing start
       const aiService = new AiService({ apiKey: openaiApiKey, provider: aiProvider });
-      
+
       let data;
       if (isImage) {
         data = await aiService.parsePatternFromImage(content); // content is base64
@@ -79,11 +80,11 @@ export default function ImportPatternScreen() {
       if (metadata.yarnWeight || data.yarnWeight) setYarnWeight(metadata.yarnWeight || data.yarnWeight);
       if (metadata.hookSize || data.hookSize) setHookSize(metadata.hookSize || data.hookSize);
       if (data.notes) setNotes(data.notes);
-      
+
       // Reconstruct structured pattern text for snippet
       // Format: Header, Materials, Gauge, Abbreviations, Instructions
       let niceSnippet = '';
-      
+
       // Header
       if (metadata.name || data.name) {
         niceSnippet += `${metadata.name || data.name}\n`;
@@ -94,7 +95,7 @@ export default function ImportPatternScreen() {
       if (data.description) {
         niceSnippet += `\n${data.description}\n`;
       }
-      
+
       // Materials
       if (materials.yarn && materials.yarn.length > 0) {
         niceSnippet += `\nMaterials:\n`;
@@ -107,12 +108,12 @@ export default function ImportPatternScreen() {
           niceSnippet += `- ${tool}\n`;
         });
       }
-      
+
       // Gauge
       if (data.gauge) {
         niceSnippet += `\nGauge: ${data.gauge}\n`;
       }
-      
+
       // Abbreviations
       if (data.abbreviations && data.abbreviations.length > 0) {
         niceSnippet += `\nAbbreviations:\n`;
@@ -120,20 +121,20 @@ export default function ImportPatternScreen() {
           niceSnippet += `${abbr}\n`;
         });
       }
-      
+
       // Instructions
       if (instructions.length > 0) {
         niceSnippet += `\nInstructions:\n`;
         instructions.forEach((section: any) => {
           const sectionName = section.section_name || section.name || 'Main Pattern';
           niceSnippet += `\n${sectionName}\n`;
-          
+
           const steps = section.steps || section.rows || [];
           steps.forEach((step: any) => {
             const rowLabel = step.row_label || step.label || '';
             const instruction = step.instruction || '';
             const stitchCount = step.stitch_count || step.stitchCount || '';
-            
+
             niceSnippet += `${rowLabel}: ${instruction}`;
             if (stitchCount) {
               niceSnippet += ` (${stitchCount})`;
@@ -142,7 +143,7 @@ export default function ImportPatternScreen() {
           });
         });
       }
-      
+
       setExtractedText(niceSnippet.trim());
       setExtractionProgress(1);
       showSuccess('AI Successfully parsed the pattern!');
@@ -162,18 +163,18 @@ export default function ImportPatternScreen() {
     if (aiAssistantEnabled && openaiApiKey) {
       const success = await processWithAi(text, isBase64Image);
       if (success) return true;
-      
+
       // If AI fails, notify user we are falling back
       showError('AI Parsing failed. Falling back to standard extraction.');
     }
 
     // Fallback to standard regex extraction
     setExtractedText(text);
-    
+
     if (text.trim().length > 0) {
       // Auto-extract pattern data
       const extracted = extractPatternData(text);
-      
+
       // Auto-populate fields (only if they're empty)
       if (extracted.name && !name) setName(extracted.name);
       if (title && !name) setName(title); // Prefer title from metadata if available
@@ -183,7 +184,7 @@ export default function ImportPatternScreen() {
       if (extracted.yarnWeight && !yarnWeight) setYarnWeight(extracted.yarnWeight);
       if (extracted.hookSize && !hookSize) setHookSize(extracted.hookSize);
       if (extracted.notes && !notes) setNotes(extracted.notes);
-      
+
       return true;
     }
     return false;
@@ -191,11 +192,11 @@ export default function ImportPatternScreen() {
 
   const handleScrapeUrl = async () => {
     if (!referenceUrl) return;
-    
+
     try {
       setIsScraping(true);
       setExtractionProgress(0);
-      
+
       // Use our unified scraper
       const result = await scrapeUrl(referenceUrl, (status) => {
         // Simple progress simulation or status update
@@ -203,15 +204,15 @@ export default function ImportPatternScreen() {
         else if (status.includes('Parsing') || status.includes('Processing')) setExtractionProgress(0.5);
         else if (status.includes('Scanning')) setExtractionProgress(0.7);
       });
-      
+
       const success = await processExtractedContent(result.text, result.title, referenceUrl);
-      
+
       if (success) {
         showSuccess(`Imported content from ${referenceUrl}`);
       } else {
         showError('Could not extract readable text from this URL.');
       }
-      
+
       setExtractionProgress(1);
     } catch (err) {
       console.error('Scraping failed:', err);
@@ -225,7 +226,7 @@ export default function ImportPatternScreen() {
     try {
       setIsLoadingFile(true);
       setIsExtracting(true);
-      
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: true,
@@ -235,22 +236,22 @@ export default function ImportPatternScreen() {
 
       if (!result.canceled && result.assets.length > 0) {
         setFileName(`${result.assets.length} images selected`);
-        
+
         // If AI is enabled, process images with AI
         if (aiAssistantEnabled && openaiApiKey) {
           let processedCount = 0;
           let lastSuccessfulData: any = null;
-          
+
           // Process first image (most important) - this will populate the form
           const firstAsset = result.assets[0];
           const base64 = firstAsset.base64 || await readFileAsBase64(firstAsset.uri);
           const success = await processWithAi(base64, true);
-          
+
           if (success) {
             processedCount++;
             lastSuccessfulData = { base64, uri: firstAsset.uri };
           }
-          
+
           // Process remaining images if any (for multi-page patterns)
           // Note: Currently we only use the first image's data, but we could combine them
           for (let i = 1; i < result.assets.length; i++) {
@@ -266,7 +267,7 @@ export default function ImportPatternScreen() {
             }
             setExtractionProgress((i + 1) / result.assets.length);
           }
-          
+
           if (processedCount > 0) {
             showSuccess(`Processed ${processedCount} of ${result.assets.length} images`);
           }
@@ -300,34 +301,34 @@ export default function ImportPatternScreen() {
         const doc = result.assets[0];
         setFileUri(doc.uri);
         setFileName(doc.name);
-        
+
         // Use scrapeUrl for local files too (it handles file:// URIs)
         // For PDFs on native, scrapeUrl calls extractTextFromFile which returns empty string
         // We need to detect if it's a PDF on native and read as Base64 for AI
         const isPDF = doc.mimeType === 'application/pdf' || doc.name.toLowerCase().endsWith('.pdf');
-        
+
         let textContent = '';
         let isBase64 = false;
 
         // Special handling for Native PDFs if using AI
         if (aiAssistantEnabled && isPDF && Platform.OS !== 'web') {
-           // On native, read PDF as Base64 for AI vision/analysis since we can't parse text locally
-           textContent = await readFileAsBase64(doc.uri);
-           isBase64 = true;
+          // On native, read PDF as Base64 for AI vision/analysis since we can't parse text locally
+          textContent = await readFileAsBase64(doc.uri);
+          isBase64 = true;
         } else {
-           // Only scrape if we haven't already read it as base64
-           const scrapeResult = await scrapeUrl(doc.uri, (status) => {
-              if (status.includes('Processing')) setExtractionProgress(0.5);
-           });
-           textContent = scrapeResult.text;
+          // Only scrape if we haven't already read it as base64
+          const scrapeResult = await scrapeUrl(doc.uri, (status) => {
+            if (status.includes('Processing')) setExtractionProgress(0.5);
+          });
+          textContent = scrapeResult.text;
         }
-        
+
         const success = await processExtractedContent(textContent, undefined, doc.uri, isBase64);
-        
+
         if (success) {
           showSuccess(`Extracted content from file`);
         } else {
-           showSuccess('File attached (text extraction not available)');
+          showSuccess('File attached (text extraction not available)');
         }
       }
     } catch (error) {
@@ -382,210 +383,216 @@ export default function ImportPatternScreen() {
   return (
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>Patterns</Text>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Import pattern</Text>
-        <Text style={[styles.body, { color: theme.colors.textSecondary }]}>
-          Upload a PDF, image (JPG/PNG), or text file.
-          {aiAssistantEnabled 
-            ? " AI Parsing is enabled for smarter results." 
-            : " Enable 'AI Assistant' in settings for smarter parsing."}
-        </Text>
-      </View>
-
-      <Card title="Details" subtitle="Basic metadata">
-        <Field
-          label="Name"
-          value={name}
-          onChangeText={setName}
-          placeholder="e.g., Cozy Ripple Throw"
-          theme={theme}
-          required
-        />
-        <Field
-          label="Designer"
-          value={designer}
-          onChangeText={setDesigner}
-          placeholder="Optional"
-          theme={theme}
-        />
-        <Field
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Short summary of the pattern"
-          theme={theme}
-          multiline
-          required
-        />
-        <View style={styles.difficultyRow}>
-          {difficultyOptions.map((option) => {
-            const selected = option === difficulty;
-            return (
-              <TouchableOpacity
-                key={option}
-                onPress={() => setDifficulty(option)}
-                style={[
-                  styles.diffChip,
-                  {
-                    borderColor: selected ? theme.colors.accent : theme.colors.border,
-                    backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: selected ? theme.colors.accent : theme.colors.textSecondary,
-                  }}>
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: theme.colors.surfaceAlt }]}
+          >
+            <FontAwesome name="arrow-left" size={16} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.eyebrow, { color: theme.colors.muted }]}>New Pattern</Text>
+          <Text style={[styles.title, { color: theme.colors.text }]}>Import Pattern</Text>
+          <Text style={[styles.body, { color: theme.colors.textSecondary }]}>
+            Upload a PDF, image, or paste a URL.
+            {aiAssistantEnabled
+              ? " AI parsing enabled."
+              : ""}
+          </Text>
         </View>
-      </Card>
 
-      <Card title="Sources" subtitle="Link or attach the original">
-        <View style={styles.urlRow}>
-          <View style={{ flex: 1 }}>
-            <Field
-              label="Reference URL"
-              value={referenceUrl}
-              onChangeText={setReferenceUrl}
-              placeholder="https://example.com/pattern"
-              theme={theme}
-            />
+        <Card title="Details" subtitle="Basic metadata">
+          <Field
+            label="Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g., Cozy Ripple Throw"
+            theme={theme}
+            required
+          />
+          <Field
+            label="Designer"
+            value={designer}
+            onChangeText={setDesigner}
+            placeholder="Optional"
+            theme={theme}
+          />
+          <Field
+            label="Description"
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Short summary of the pattern"
+            theme={theme}
+            multiline
+            required
+          />
+          <View style={styles.difficultyRow}>
+            {difficultyOptions.map((option) => {
+              const selected = option === difficulty;
+              return (
+                <TouchableOpacity
+                  key={option}
+                  onPress={() => setDifficulty(option)}
+                  style={[
+                    styles.diffChip,
+                    {
+                      borderColor: selected ? theme.colors.accent : theme.colors.border,
+                      backgroundColor: selected ? theme.colors.accentMuted : theme.colors.surfaceAlt,
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color: selected ? theme.colors.accent : theme.colors.textSecondary,
+                    }}>
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-          <TouchableOpacity
-            onPress={handleScrapeUrl}
-            disabled={isScraping || !referenceUrl}
-            style={[
-              styles.scrapeButton,
-              { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border },
-              (isScraping || !referenceUrl) && { opacity: 0.5 }
-            ]}>
-            {isScraping ? (
-              <LoadingSpinner size="small" />
-            ) : (
-              <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>Fetch</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-          <TouchableOpacity
-            onPress={handlePickImages}
-            disabled={isLoadingFile || isExtracting || isScraping}
-            style={[
-              styles.fileButton,
-              { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, flex: 1 },
-              (isLoadingFile || isExtracting || isScraping) && { opacity: 0.6 },
-            ]}>
-            <Text style={{ color: theme.colors.text, textAlign: 'center', fontWeight: '600' }}>
-              Pick Images
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            onPress={handlePickDocument}
-            disabled={isLoadingFile || isExtracting || isScraping}
-            style={[
-              styles.fileButton,
-              { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, flex: 1 },
-              (isLoadingFile || isExtracting || isScraping) && { opacity: 0.6 },
-            ]}>
-            <Text style={{ color: theme.colors.text, textAlign: 'center', fontWeight: '600' }}>
-              Pick PDF
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </Card>
 
-        {(isLoadingFile || isExtracting || isScraping) && (
+        <Card title="Sources" subtitle="Link or attach the original">
+          <View style={styles.urlRow}>
+            <View style={{ flex: 1 }}>
+              <Field
+                label="Reference URL"
+                value={referenceUrl}
+                onChangeText={setReferenceUrl}
+                placeholder="https://example.com/pattern"
+                theme={theme}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={handleScrapeUrl}
+              disabled={isScraping || !referenceUrl}
+              style={[
+                styles.scrapeButton,
+                { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border },
+                (isScraping || !referenceUrl) && { opacity: 0.5 }
+              ]}>
+              {isScraping ? (
+                <LoadingSpinner size="small" />
+              ) : (
+                <Text style={{ color: theme.colors.accent, fontWeight: '600' }}>Fetch</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+            <TouchableOpacity
+              onPress={handlePickImages}
+              disabled={isLoadingFile || isExtracting || isScraping}
+              style={[
+                styles.fileButton,
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, flex: 1 },
+                (isLoadingFile || isExtracting || isScraping) && { opacity: 0.6 },
+              ]}>
+              <Text style={{ color: theme.colors.text, textAlign: 'center', fontWeight: '600' }}>
+                Pick Images
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handlePickDocument}
+              disabled={isLoadingFile || isExtracting || isScraping}
+              style={[
+                styles.fileButton,
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt, flex: 1 },
+                (isLoadingFile || isExtracting || isScraping) && { opacity: 0.6 },
+              ]}>
+              <Text style={{ color: theme.colors.text, textAlign: 'center', fontWeight: '600' }}>
+                Pick PDF
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {(isLoadingFile || isExtracting || isScraping) && (
             <View style={[styles.loadingContainer, { marginTop: 16 }]}>
               <LoadingSpinner size="small" />
               <View style={styles.loadingTextContainer}>
                 <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
-                  {isScraping ? 'Fetching webpage...' : 
-                   (isExtracting 
-                    ? extractionProgress > 0 
-                      ? `Extracting... ${Math.round(extractionProgress * 100)}%`
-                      : 'Extracting pattern...'
-                    : 'Loading file...')}
+                  {isScraping ? 'Fetching webpage...' :
+                    (isExtracting
+                      ? extractionProgress > 0
+                        ? `Extracting... ${Math.round(extractionProgress * 100)}%`
+                        : 'Extracting pattern...'
+                      : 'Loading file...')}
                 </Text>
                 {extractionProgress > 0 && (
                   <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-                    <View 
+                    <View
                       style={[
-                        styles.progressFill, 
-                        { 
+                        styles.progressFill,
+                        {
                           width: `${extractionProgress * 100}%`,
                           backgroundColor: theme.colors.accent,
                         }
-                      ]} 
+                      ]}
                     />
                   </View>
                 )}
               </View>
             </View>
-        )}
+          )}
 
-        {!isLoadingFile && fileName && (
-           <Text style={{ color: theme.colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
+          {!isLoadingFile && fileName && (
+            <Text style={{ color: theme.colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
               Attached: {fileName}
-           </Text>
-        )}
-        {extractedText && (
-          <View style={[styles.extractedPreview, { backgroundColor: theme.colors.surfaceAlt }]}>
-            <Text style={[styles.extractedLabel, { color: theme.colors.textSecondary }]}>
-              ✓ Content extracted ({extractedText.length} chars)
             </Text>
-            <Text style={[styles.extractedText, { color: theme.colors.text }]} numberOfLines={3}>
-              {extractedText.substring(0, 200)}...
-            </Text>
-          </View>
-        )}
-      </Card>
+          )}
+          {extractedText && (
+            <View style={[styles.extractedPreview, { backgroundColor: theme.colors.surfaceAlt }]}>
+              <Text style={[styles.extractedLabel, { color: theme.colors.textSecondary }]}>
+                ✓ Content extracted ({extractedText.length} chars)
+              </Text>
+              <Text style={[styles.extractedText, { color: theme.colors.text }]} numberOfLines={3}>
+                {extractedText.substring(0, 200)}...
+              </Text>
+            </View>
+          )}
+        </Card>
 
-      <Card title="Specs" subtitle="Optional helpers for filtering">
-        <Field
-          label="Yarn weight"
-          value={yarnWeight}
-          onChangeText={setYarnWeight}
-          placeholder="Worsted, DK..."
-          theme={theme}
-        />
-        <Field
-          label="Hook size"
-          value={hookSize}
-          onChangeText={setHookSize}
-          placeholder="4.0 mm"
-          theme={theme}
-        />
-        <Field
-          label="Notes"
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Yarn substitutions, reminders..."
-          theme={theme}
-          multiline
-        />
-      </Card>
+        <Card title="Specs" subtitle="Optional helpers for filtering">
+          <Field
+            label="Yarn weight"
+            value={yarnWeight}
+            onChangeText={setYarnWeight}
+            placeholder="Worsted, DK..."
+            theme={theme}
+          />
+          <Field
+            label="Hook size"
+            value={hookSize}
+            onChangeText={setHookSize}
+            placeholder="4.0 mm"
+            theme={theme}
+          />
+          <Field
+            label="Notes"
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Yarn substitutions, reminders..."
+            theme={theme}
+            multiline
+          />
+        </Card>
 
-      {error ? <Text style={{ color: theme.colors.accent }}>{error}</Text> : null}
+        {error ? <Text style={{ color: theme.colors.accent }}>{error}</Text> : null}
 
-      <TouchableOpacity
-        onPress={handleSubmit}
-        disabled={isSubmitting}
-        style={[
-          styles.submitButton,
-          { backgroundColor: theme.colors.accent },
-          isSubmitting && { opacity: 0.6 },
-        ]}>
-        {isSubmitting ? (
-          <LoadingSpinner size="small" color="#000" />
-        ) : (
-          <Text style={styles.submitButtonText}>Save to library</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+          style={[
+            styles.submitButton,
+            { backgroundColor: theme.colors.accent },
+            isSubmitting && { opacity: 0.6 },
+          ]}>
+          {isSubmitting ? (
+            <LoadingSpinner size="small" color="#000" />
+          ) : (
+            <Text style={styles.submitButtonText}>Save to library</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </Screen>
   );
@@ -637,6 +644,14 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
     gap: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   eyebrow: {
     textTransform: 'uppercase',

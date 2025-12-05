@@ -1,489 +1,312 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { SlideUp } from '@/components/animations/SlideUp';
 import { Screen } from '@/components/Screen';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useTheme } from '@/hooks/useTheme';
+import { useToast } from '@/hooks/useToast';
+import { useCartStore } from '@/store/useCartStore';
+import { useCommunityStore } from '@/store/useCommunityStore';
 
-// Mock Data for Community Feed
-const communityPosts = [
-  {
-    id: 'post1',
-    user: 'AliceCrafts',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=Alice',
-    projectTitle: 'Sunset Cardigan',
-    image: 'https://images.unsplash.com/photo-1619250907298-76e018cb932e?q=80&w=600&auto=format&fit=crop',
-    likes: 124,
-    patternName: 'Cozy Cardigan Pattern',
-    isPaid: true,
-  },
-  {
-    id: 'post2',
-    user: 'YarnMaster99',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=YarnMaster',
-    projectTitle: 'Dragon Scale Bag',
-    image: 'https://images.unsplash.com/photo-1584662889139-55364fb59d84?q=80&w=600&auto=format&fit=crop',
-    likes: 89,
-    patternName: 'Dragon Scale Stitch',
-    isPaid: false,
-  },
-  {
-    id: 'post3',
-    user: 'StitchWitch',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=StitchWitch',
-    projectTitle: 'Amigurumi Fox',
-    image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?q=80&w=600&auto=format&fit=crop',
-    likes: 256,
-    patternName: 'Fox Plushie',
-    isPaid: true,
-  },
-];
-
-type TabType = 'share' | 'store';
+type TabType = 'feed' | 'patterns' | 'testers';
 
 export default function CommunityScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>('share');
+  const { showSuccess } = useToast();
+  const [activeTab, setActiveTab] = useState<TabType>('feed');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Cart
+  const cartItems = useCartStore((state) => state.items);
+  const cartCount = cartItems.length;
+
+  // Get data from store
+  const posts = useCommunityStore((state) => state.posts);
+  const users = useCommunityStore((state) => state.users);
+  const currentUserId = useCommunityStore((state) => state.currentUserId);
+  const likePost = useCommunityStore((state) => state.likePost);
+  const unlikePost = useCommunityStore((state) => state.unlikePost);
+  const bookmarkPost = useCommunityStore((state) => state.bookmarkPost);
+  const unbookmarkPost = useCommunityStore((state) => state.unbookmarkPost);
+  const patternStoreItems = useCommunityStore((state) => state.patternStoreItems);
+  const testerCalls = useCommunityStore((state) => state.testerCalls);
+
+  // Enrich posts with user data
+  const enrichedPosts = useMemo(() => {
+    return posts.map((post) => {
+      const user = users.find((u) => u.id === post.userId);
+      return {
+        ...post,
+        user,
+        isLiked: post.likes.includes(currentUserId),
+        isBookmarked: post.bookmarks.includes(currentUserId),
+      };
+    });
+  }, [posts, users, currentUserId]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setRefreshing(false);
+  };
+
+  const handleLike = (postId: string, isLiked: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (isLiked) {
+      unlikePost(postId, currentUserId);
+    } else {
+      likePost(postId, currentUserId);
+    }
+  };
+
+  const handleBookmark = (postId: string, isBookmarked: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (isBookmarked) {
+      unbookmarkPost(postId, currentUserId);
+    } else {
+      bookmarkPost(postId, currentUserId);
+      showSuccess('Saved!');
+    }
+  };
+
+  const handlePostPress = (postId: string) => {
+    router.push({ pathname: '/community/[postId]', params: { postId } });
+  };
+
+  const handlePatternPress = (patternId: string, isTester: boolean) => {
+    router.push({
+      pathname: '/community/pattern/[patternId]',
+      params: { patternId, type: isTester ? 'tester' : 'store' }
+    });
+  };
 
   return (
     <Screen>
+      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>COMMUNITY</Text>
           <Text style={[styles.title, { color: theme.colors.text }]}>Discover & Share</Text>
         </View>
-        {activeTab === 'share' && (
+        <View style={styles.headerActions}>
+          {/* Cart Icon */}
           <TouchableOpacity
-            onPress={() => router.push('/community/publish')}
-            style={[styles.publishButton, { backgroundColor: theme.colors.accent }]}
+            onPress={() => router.push('/community/cart')}
+            style={[styles.iconButton, { backgroundColor: theme.colors.surface }]}
           >
-            <FontAwesome name="plus" size={12} color="#000" style={{ marginRight: 6 }} />
-            <Text style={styles.publishButtonText}>Share</Text>
+            <FontAwesome name="shopping-cart" size={18} color={theme.colors.text} />
+            {cartCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: theme.colors.accent }]}>
+                <Text style={styles.badgeText}>{cartCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
-        )}
+          {activeTab === 'feed' && (
+            <TouchableOpacity
+              onPress={() => router.push('/community/publish')}
+              style={[styles.shareButton, { backgroundColor: theme.colors.accent }]}
+            >
+              <FontAwesome name="plus" size={12} color="#000" style={{ marginRight: 6 }} />
+              <Text style={styles.shareButtonText}>Share</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContainer}>
         <TouchableOpacity
-          onPress={() => setActiveTab('share')}
-          style={[
-            styles.tab,
-            {
-              backgroundColor: activeTab === 'share' ? theme.colors.accent : theme.colors.surface,
-              borderColor: activeTab === 'share' ? theme.colors.accent : theme.colors.border,
-            },
-          ]}>
-          <FontAwesome
-            name="share-alt"
-            size={14}
-            color={activeTab === 'share' ? '#000' : theme.colors.textSecondary}
-            style={{ marginRight: 6 }}
-          />
-          <Text
-            style={{
-              color: activeTab === 'share' ? '#000' : theme.colors.textSecondary,
-              fontWeight: activeTab === 'share' ? '700' : '500',
-            }}>
-            Project Share
-          </Text>
+          onPress={() => setActiveTab('feed')}
+          style={[styles.tab, { backgroundColor: activeTab === 'feed' ? theme.colors.accent : theme.colors.surface }]}>
+          <FontAwesome name="newspaper-o" size={14} color={activeTab === 'feed' ? '#000' : theme.colors.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={{ color: activeTab === 'feed' ? '#000' : theme.colors.textSecondary, fontWeight: activeTab === 'feed' ? '700' : '500' }}>Feed</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => setActiveTab('store')}
-          style={[
-            styles.tab,
-            {
-              backgroundColor: activeTab === 'store' ? theme.colors.accent : theme.colors.surface,
-              borderColor: activeTab === 'store' ? theme.colors.accent : theme.colors.border,
-            },
-          ]}>
-          <FontAwesome
-            name="shopping-bag"
-            size={14}
-            color={activeTab === 'store' ? '#000' : theme.colors.textSecondary}
-            style={{ marginRight: 6 }}
-          />
-          <Text
-            style={{
-              color: activeTab === 'store' ? '#000' : theme.colors.textSecondary,
-              fontWeight: activeTab === 'store' ? '700' : '500',
-            }}>
-            Pattern Store
-          </Text>
+          onPress={() => setActiveTab('patterns')}
+          style={[styles.tab, { backgroundColor: activeTab === 'patterns' ? theme.colors.accent : theme.colors.surface }]}>
+          <FontAwesome name="shopping-bag" size={14} color={activeTab === 'patterns' ? '#000' : theme.colors.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={{ color: activeTab === 'patterns' ? '#000' : theme.colors.textSecondary, fontWeight: activeTab === 'patterns' ? '700' : '500' }}>Patterns</Text>
         </TouchableOpacity>
-      </View>
-
-      {activeTab === 'share' ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
-        {communityPosts.map((post, index) => (
-          <SlideUp key={post.id} delay={index * 100}>
-            <View style={[styles.postCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-              {/* User Header */}
-              <View style={styles.userHeader}>
-                <Image source={{ uri: post.avatar }} style={styles.avatar} />
-                <Text style={[styles.username, { color: theme.colors.text }]}>{post.user}</Text>
-                <TouchableOpacity style={styles.moreButton}>
-                  <FontAwesome name="ellipsis-h" size={16} color={theme.colors.muted} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Project Image */}
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: post.image }} style={styles.projectImage} />
-                {post.isPaid && (
-                  <View style={[styles.badge, { backgroundColor: theme.colors.accent }]}>
-                    <Text style={styles.badgeText}>PAID PATTERN</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Content */}
-              <View style={styles.content}>
-                <View style={styles.actions}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <FontAwesome name="heart-o" size={22} color={theme.colors.text} />
-                    <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>{post.likes}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <FontAwesome name="comment-o" size={22} color={theme.colors.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <FontAwesome name="bookmark-o" size={22} color={theme.colors.text} />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.projectTitle, { color: theme.colors.text }]}>{post.projectTitle}</Text>
-                <Text style={[styles.patternLink, { color: theme.colors.accent }]}>
-                  Pattern: {post.patternName}
-                </Text>
-              </View>
-            </View>
-          </SlideUp>
-        ))}
+        <TouchableOpacity
+          onPress={() => setActiveTab('testers')}
+          style={[styles.tab, { backgroundColor: activeTab === 'testers' ? theme.colors.accent : theme.colors.surface }]}>
+          <FontAwesome name="flask" size={14} color={activeTab === 'testers' ? '#000' : theme.colors.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={{ color: activeTab === 'testers' ? '#000' : theme.colors.textSecondary, fontWeight: activeTab === 'testers' ? '700' : '500' }}>Testers</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => router.push('/community/saved')}
+          style={[styles.tab, { backgroundColor: theme.colors.surface }]}>
+          <FontAwesome name="bookmark-o" size={14} color={theme.colors.textSecondary} style={{ marginRight: 6 }} />
+          <Text style={{ color: theme.colors.textSecondary, fontWeight: '500' }}>Saved</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* Tab Content */}
+      {activeTab === 'feed' ? (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.feed}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.accent} />}
+        >
+          {enrichedPosts.length === 0 ? (
+            <EmptyState
+              icon={{ name: 'users', size: 48 }}
+              title="No posts yet"
+              description="Share your finished projects!"
+              actionLabel="Share a Project"
+              onAction={() => router.push('/community/publish')}
+            />
+          ) : (
+            enrichedPosts.map((post, index) => (
+              <SlideUp key={post.id} delay={index * 60}>
+                <TouchableOpacity activeOpacity={0.9} onPress={() => handlePostPress(post.id)} style={[styles.postCard, { backgroundColor: theme.colors.surface }]}>
+                  <View style={styles.userHeader}>
+                    <Image source={{ uri: post.user?.avatar || 'https://api.dicebear.com/7.x/avataaars/png?seed=default' }} style={styles.avatar} />
+                    <Text style={[styles.username, { color: theme.colors.text }]}>{post.user?.username || 'Unknown'}</Text>
+                  </View>
+                  <View style={styles.imageContainer}>
+                    {post.images.length > 0 ? (
+                      <Image source={{ uri: post.images[0] }} style={styles.postImage} />
+                    ) : (
+                      <View style={[styles.postImage, { backgroundColor: theme.colors.surfaceAlt, justifyContent: 'center', alignItems: 'center' }]}>
+                        <FontAwesome name="image" size={40} color={theme.colors.muted} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.postContent}>
+                    <View style={styles.actions}>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(post.id, post.isLiked)}>
+                        <FontAwesome name={post.isLiked ? 'heart' : 'heart-o'} size={22} color={post.isLiked ? '#ff4757' : theme.colors.text} />
+                        <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>{post.likes.length}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => handlePostPress(post.id)}>
+                        <FontAwesome name="comment-o" size={22} color={theme.colors.text} />
+                        <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>{post.comments.length}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => handleBookmark(post.id, post.isBookmarked)}>
+                        <FontAwesome name={post.isBookmarked ? 'bookmark' : 'bookmark-o'} size={22} color={post.isBookmarked ? theme.colors.accent : theme.colors.text} />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={[styles.postTitle, { color: theme.colors.text }]}>{post.projectName}</Text>
+                    {post.caption && <Text style={[styles.caption, { color: theme.colors.textSecondary }]} numberOfLines={2}>{post.caption}</Text>}
+                  </View>
+                </TouchableOpacity>
+              </SlideUp>
+            ))
+          )}
+        </ScrollView>
+      ) : activeTab === 'patterns' ? (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
+          <Text style={[styles.sectionDesc, { color: theme.colors.textSecondary }]}>Browse patterns from designers</Text>
+          {patternStoreItems.map((pattern, index) => (
+            <SlideUp key={pattern.id} delay={index * 60}>
+              <TouchableOpacity activeOpacity={0.9} onPress={() => handlePatternPress(pattern.id, false)} style={[styles.patternCard, { backgroundColor: theme.colors.surface }]}>
+                <Image source={{ uri: pattern.image }} style={styles.patternImage} />
+                <View style={[styles.priceBadge, { backgroundColor: pattern.price ? theme.colors.accent : '#4CAF50' }]}>
+                  <Text style={styles.priceText}>{pattern.price ? `$${pattern.price.toFixed(2)}` : 'FREE'}</Text>
+                </View>
+                <View style={styles.patternInfo}>
+                  <Text style={[styles.patternName, { color: theme.colors.text }]} numberOfLines={1}>{pattern.name}</Text>
+                  <Text style={[styles.designerName, { color: theme.colors.textSecondary }]}>by {pattern.designer}</Text>
+                  <View style={styles.patternMeta}>
+                    <View style={[styles.diffTag, { backgroundColor: (pattern.difficulty === 'Beginner' ? '#4CAF50' : pattern.difficulty === 'Intermediate' ? '#FF9800' : '#F44336') + '20' }]}>
+                      <Text style={{ color: pattern.difficulty === 'Beginner' ? '#4CAF50' : pattern.difficulty === 'Intermediate' ? '#FF9800' : '#F44336', fontSize: 11, fontWeight: '600' }}>{pattern.difficulty}</Text>
+                    </View>
+                    {pattern.rating && (
+                      <View style={styles.ratingRow}>
+                        <FontAwesome name="star" size={12} color="#FFD700" />
+                        <Text style={[styles.ratingText, { color: theme.colors.text }]}>{pattern.rating}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </SlideUp>
+          ))}
+        </ScrollView>
       ) : (
-        <PatternStoreTab />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
+          <Text style={[styles.sectionDesc, { color: theme.colors.textSecondary }]}>Help test patterns and get rewards!</Text>
+          {testerCalls.map((call, index) => (
+            <SlideUp key={call.id} delay={index * 60}>
+              <TouchableOpacity activeOpacity={0.9} onPress={() => handlePatternPress(call.id, true)} style={[styles.testerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <Image source={{ uri: call.image }} style={styles.testerImage} />
+                <View style={styles.testerInfo}>
+                  <Text style={[styles.testerName, { color: theme.colors.text }]}>{call.patternName}</Text>
+                  <Text style={[styles.testerDesigner, { color: theme.colors.textSecondary }]}>by {call.designer}</Text>
+                  <View style={styles.testerMeta}>
+                    <View style={[styles.diffTag, { backgroundColor: theme.colors.accentMuted }]}>
+                      <Text style={{ color: theme.colors.accent, fontSize: 11, fontWeight: '600' }}>{call.difficulty}</Text>
+                    </View>
+                    <View style={styles.deadlineRow}>
+                      <FontAwesome name="calendar" size={11} color={theme.colors.muted} />
+                      <Text style={[styles.deadlineText, { color: theme.colors.muted }]}>{call.deadline}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.rewardBadge, { backgroundColor: theme.colors.accentMuted }]}>
+                    <FontAwesome name="gift" size={12} color={theme.colors.accent} />
+                    <Text style={[styles.rewardBadgeText, { color: theme.colors.accent }]}>{call.reward}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </SlideUp>
+          ))}
+        </ScrollView>
       )}
     </Screen>
   );
 }
 
-function PatternStoreTab() {
-  const theme = useTheme();
-  const router = useRouter();
-
-  // Mock data for pattern store / call for testers
-  const testerCalls = [
-    {
-      id: 'tester1',
-      designer: 'CrochetDesigns Co.',
-      patternName: 'Cozy Winter Cardigan',
-      difficulty: 'Intermediate',
-      deadline: '2024-02-15',
-      requirements: 'Must complete within 2 weeks, provide feedback',
-      reward: 'Free pattern + early access',
-      image: 'https://images.unsplash.com/photo-1619250907298-76e018cb932e?q=80&w=600&auto=format&fit=crop',
-    },
-    {
-      id: 'tester2',
-      designer: 'YarnCraft Studio',
-      patternName: 'Amigurumi Bunny Collection',
-      difficulty: 'Beginner',
-      deadline: '2024-02-20',
-      requirements: 'Test all 3 sizes, document issues',
-      reward: 'Pattern bundle + credit',
-      image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?q=80&w=600&auto=format&fit=crop',
-    },
-    {
-      id: 'tester3',
-      designer: 'StitchMaster',
-      patternName: 'Lace Shawl Pattern',
-      difficulty: 'Advanced',
-      deadline: '2024-02-28',
-      requirements: 'Test with different yarn weights',
-      reward: 'Premium pattern access',
-      image: 'https://images.unsplash.com/photo-1584662889139-55364fb59d84?q=80&w=600&auto=format&fit=crop',
-    },
-  ];
-
-  return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feed}>
-      <View style={styles.storeHeader}>
-        <Text style={[styles.storeDescription, { color: theme.colors.textSecondary }]}>
-          Help designers test new patterns and get early access to patterns.
-        </Text>
-      </View>
-
-      {testerCalls.map((call, index) => (
-        <SlideUp key={call.id} delay={index * 100}>
-          <View style={[styles.testerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <View style={styles.testerHeader}>
-              <View style={styles.testerInfo}>
-                <Text style={[styles.designerName, { color: theme.colors.text }]}>{call.designer}</Text>
-                <Text style={[styles.patternName, { color: theme.colors.textSecondary }]}>{call.patternName}</Text>
-              </View>
-              <View style={[styles.difficultyBadge, { backgroundColor: theme.colors.accentMuted }]}>
-                <Text style={{ color: theme.colors.accent, fontSize: 11, fontWeight: '600' }}>
-                  {call.difficulty}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.testerImageContainer}>
-              <Image source={{ uri: call.image }} style={styles.testerImage} />
-            </View>
-
-            <View style={styles.testerDetails}>
-              <View style={styles.detailRow}>
-                <FontAwesome name="calendar" size={14} color={theme.colors.textSecondary} />
-                <Text style={[styles.detailText, { color: theme.colors.textSecondary }]}>
-                  Deadline: {call.deadline}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <FontAwesome name="check-circle" size={14} color={theme.colors.textSecondary} />
-                <Text style={[styles.detailText, { color: theme.colors.textSecondary }]}>
-                  {call.requirements}
-                </Text>
-              </View>
-              <View style={[styles.rewardBox, { backgroundColor: theme.colors.accentMuted, borderColor: theme.colors.accent }]}>
-                <FontAwesome name="gift" size={14} color={theme.colors.accent} />
-                <Text style={[styles.rewardText, { color: theme.colors.accent }]}>{call.reward}</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.applyButton, { backgroundColor: theme.colors.accent }]}
-              onPress={() => {
-                // TODO: Implement apply functionality
-              }}>
-              <Text style={styles.applyButtonText}>Apply to Test</Text>
-            </TouchableOpacity>
-          </View>
-        </SlideUp>
-      ))}
-    </ScrollView>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  publishButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  publishButtonText: {
-    color: '#000',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  feed: {
-    gap: 24,
-    paddingBottom: 100,
-  },
-  postCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    // borderWidth: 1, // Removed border for cleaner look
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  userHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 10,
-    backgroundColor: '#ccc',
-  },
-  username: {
-    fontSize: 15,
-    fontWeight: '600',
-    flex: 1,
-  },
-  moreButton: {
-    padding: 8,
-  },
-  imageContainer: {
-    width: '100%',
-    aspectRatio: 1, // Square images for feed consistency
-    backgroundColor: '#333',
-    position: 'relative',
-  },
-  projectImage: {
-    width: '100%',
-    height: '100%',
-  },
-  badge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#000',
-  },
-  content: {
-    padding: 16,
-  },
-  actions: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    gap: 16,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  projectTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  patternLink: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  storeHeader: {
-    marginBottom: 20,
-  },
-  storeDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  testerCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    marginBottom: 24,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  testerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 16,
-    paddingBottom: 12,
-  },
-  testerInfo: {
-    flex: 1,
-  },
-  designerName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  patternName: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  difficultyBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  testerImageContainer: {
-    width: '100%',
-    aspectRatio: 1.5,
-    backgroundColor: '#333',
-  },
-  testerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  testerDetails: {
-    padding: 16,
-    gap: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailText: {
-    fontSize: 13,
-    flex: 1,
-  },
-  rewardBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 4,
-  },
-  rewardText: {
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
-  },
-  applyButton: {
-    margin: 16,
-    marginTop: 0,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    color: '#000',
-    fontWeight: '700',
-    fontSize: 16,
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  eyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 2 },
+  title: { fontSize: 26, fontWeight: '700' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  badge: { position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  badgeText: { color: '#000', fontSize: 10, fontWeight: '700' },
+  shareButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 },
+  shareButtonText: { color: '#000', fontWeight: '600', fontSize: 13 },
+  tabsContainer: { paddingBottom: 14, gap: 8 },
+  tab: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 18 },
+  feed: { gap: 16, paddingBottom: 100 },
+  sectionDesc: { fontSize: 14, marginBottom: 8 },
+  postCard: { borderRadius: 18, overflow: 'hidden' },
+  userHeader: { flexDirection: 'row', alignItems: 'center', padding: 12 },
+  avatar: { width: 34, height: 34, borderRadius: 17, marginRight: 10, backgroundColor: '#ccc' },
+  username: { fontSize: 14, fontWeight: '600' },
+  imageContainer: { width: '100%', aspectRatio: 1, backgroundColor: '#333' },
+  postImage: { width: '100%', height: '100%' },
+  postContent: { padding: 12 },
+  actions: { flexDirection: 'row', gap: 14, marginBottom: 8 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  actionText: { fontSize: 14, fontWeight: '500' },
+  postTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  caption: { fontSize: 13, lineHeight: 18 },
+  patternCard: { flexDirection: 'row', borderRadius: 16, overflow: 'hidden' },
+  patternImage: { width: 100, height: 100, backgroundColor: '#333' },
+  priceBadge: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  priceText: { color: '#000', fontSize: 11, fontWeight: '800' },
+  patternInfo: { flex: 1, padding: 12, justifyContent: 'center' },
+  patternName: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  designerName: { fontSize: 12, marginBottom: 8 },
+  patternMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  diffTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  ratingText: { fontSize: 13, fontWeight: '600' },
+  testerCard: { flexDirection: 'row', borderRadius: 16, overflow: 'hidden', borderWidth: 1 },
+  testerImage: { width: 100, height: 120, backgroundColor: '#333' },
+  testerInfo: { flex: 1, padding: 12, justifyContent: 'center' },
+  testerName: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  testerDesigner: { fontSize: 12, marginBottom: 6 },
+  testerMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  deadlineText: { fontSize: 11 },
+  rewardBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  rewardBadgeText: { fontSize: 11, fontWeight: '600' },
 });

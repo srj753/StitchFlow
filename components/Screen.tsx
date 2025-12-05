@@ -1,12 +1,12 @@
 import { ReactNode } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    View,
-    ViewStyle,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+  ViewStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,13 +16,14 @@ type ScreenProps = {
   children: ReactNode;
   scrollable?: boolean;
   contentStyle?: ViewStyle;
+  safeAreaBackgroundColor?: string;
 };
 
-export function Screen({ children, scrollable = true, contentStyle }: ScreenProps) {
+export function Screen({ children, scrollable = true, contentStyle, safeAreaBackgroundColor }: ScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
-  
+
   // On web, we don't have a bottom tab bar overlay usually, but we might want padding
   const bottomPadding = insets.bottom + theme.spacing.xl + (isWeb ? 24 : 32);
 
@@ -45,35 +46,32 @@ export function Screen({ children, scrollable = true, contentStyle }: ScreenProp
   const safeAreaStyle = [
     styles.safeArea,
     {
-      backgroundColor: theme.colors.background,
+      backgroundColor: safeAreaBackgroundColor ?? theme.colors.background,
     },
   ];
 
   // Web-specific simplified wrapper to avoid layout/touch issues
   if (isWeb) {
-     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background, overflow: 'hidden' }]}>
-            <View style={styles.webInnerContainer}>
-                {scrollable ? (
-                    <ScrollView
-                        style={{ width: '100%', flex: 1 }}
-                        contentContainerStyle={[styles.scrollContainer, styles.webScrollContainer]}
-                        showsVerticalScrollIndicator={true}
-                        // IMPORTANT: On web, 'handled' can swallow clicks. 
-                        // Use 'always' or remove the prop for web if possible, but 'always' is usually safer for buttons.
-                        // Or 'undefined' to let default web behavior happen.
-                        keyboardShouldPersistTaps={undefined} 
-                    >
-                        {content}
-                    </ScrollView>
-                ) : (
-                    <View style={[styles.staticContainer, styles.webScrollContainer]}>
-                        {content}
-                    </View>
-                )}
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background, overflow: 'hidden' }]}>
+        <View style={styles.webInnerContainer}>
+          {scrollable ? (
+            <ScrollView
+              style={{ width: '100%', flex: 1 }}
+              contentContainerStyle={[styles.scrollContainer, styles.webScrollContainer]}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="always"
+            >
+              {content}
+            </ScrollView>
+          ) : (
+            <View style={[styles.staticContainer, styles.webScrollContainer]}>
+              {content}
             </View>
+          )}
         </View>
-     );
+      </View>
+    );
   }
 
   // Native Implementation
@@ -83,25 +81,25 @@ export function Screen({ children, scrollable = true, contentStyle }: ScreenProp
         style={safeAreaStyle}
         edges={['top', 'left', 'right']}>
         <StatusBar barStyle={theme.barStyle} />
-        
+
         <View style={styles.innerContainer}>
-            {scrollable ? (
+          {scrollable ? (
             <KeyboardAvoidingView
-                style={styles.avoider}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView
+              style={styles.avoider}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+              <ScrollView
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}
-                >
+              >
                 {content}
-                </ScrollView>
+              </ScrollView>
             </KeyboardAvoidingView>
-            ) : (
+          ) : (
             <View style={styles.staticContainer}>
-                {content}
+              {content}
             </View>
-            )}
+          )}
         </View>
       </SafeAreaView>
     </View>

@@ -2,14 +2,14 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { Card } from '@/components/Card';
@@ -17,6 +17,7 @@ import { Screen } from '@/components/Screen';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
+import { useCommunityStore } from '@/store/useCommunityStore';
 import { useProjectsStore } from '@/store/useProjectsStore';
 
 export default function PublishProjectScreen() {
@@ -26,6 +27,10 @@ export default function PublishProjectScreen() {
   const { projectId } = useLocalSearchParams<{ projectId: string }>();
   const projects = useProjectsStore((state) => state.projects);
 
+  // Community store
+  const addPost = useCommunityStore((state) => state.addPost);
+  const currentUserId = useCommunityStore((state) => state.currentUserId);
+
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projectId || null);
 
   useEffect(() => {
@@ -34,7 +39,7 @@ export default function PublishProjectScreen() {
 
   const project = projects.find((p) => p.id === selectedProjectId);
   const completedProjects = projects.filter((p) => p.status === 'finished');
-  
+
   const [caption, setCaption] = useState('');
   const [includePattern, setIncludePattern] = useState(false);
   const [includeJournal, setIncludeJournal] = useState(true);
@@ -43,7 +48,23 @@ export default function PublishProjectScreen() {
   const [price, setPrice] = useState('');
 
   const handlePublish = () => {
-    // Mock publish action
+    if (!project) return;
+
+    // Create post with project data
+    const newPost = addPost({
+      userId: currentUserId,
+      projectId: project.id,
+      projectName: project.name,
+      patternName: project.patternName,
+      caption: caption || `Just finished my ${project.name}! 🎉`,
+      images: project.photos.length > 0 ? project.photos : (project.thumbnail ? [project.thumbnail] : []),
+      includeJournal,
+      includeStudio,
+      includePattern,
+      journalEntries: includeJournal ? project.journal : undefined,
+      studioData: includeStudio ? { colorPalette: project.colorPalette } : undefined,
+    });
+
     showSuccess('Project published to community!');
     router.dismissTo('/community');
   };
@@ -58,42 +79,42 @@ export default function PublishProjectScreen() {
           </TouchableOpacity>
           <Text style={[styles.title, { color: theme.colors.text }]}>Select Project</Text>
         </View>
-        
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-           <Text style={[styles.sectionDescription, { color: theme.colors.textSecondary }]}>
-             Choose a finished project to share with the community.
-           </Text>
 
-           {completedProjects.length === 0 ? (
-             <EmptyState
-               icon={{ name: 'trophy', size: 48 }}
-               title="No finished projects"
-               description="Mark a project as 'Finished' in the tracking tab to share it with the community."
-               actionLabel="Go to Projects"
-               onAction={() => router.push('/projects')}
-             />
-           ) : (
-             completedProjects.map((p) => (
-               <TouchableOpacity 
-                 key={p.id} 
-                 onPress={() => setSelectedProjectId(p.id)}
-                 style={[styles.projectSelectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-               >
-                 <View style={[styles.selectionThumbnail, { backgroundColor: theme.colors.surfaceAlt }]}>
-                    {p.thumbnail ? (
-                      <Image source={{ uri: p.thumbnail }} style={styles.thumbnail} />
-                    ) : (
-                      <FontAwesome name="image" size={24} color={theme.colors.muted} />
-                    )}
-                 </View>
-                 <View style={styles.selectionInfo}>
-                   <Text style={[styles.selectionTitle, { color: theme.colors.text }]}>{p.name}</Text>
-                   <Text style={{ color: theme.colors.textSecondary }}>{p.patternName || 'Custom Project'}</Text>
-                 </View>
-                 <FontAwesome name="chevron-right" size={16} color={theme.colors.muted} />
-               </TouchableOpacity>
-             ))
-           )}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <Text style={[styles.sectionDescription, { color: theme.colors.textSecondary }]}>
+            Choose a finished project to share with the community.
+          </Text>
+
+          {completedProjects.length === 0 ? (
+            <EmptyState
+              icon={{ name: 'trophy', size: 48 }}
+              title="No finished projects"
+              description="Mark a project as 'Finished' in the tracking tab to share it with the community."
+              actionLabel="Go to Projects"
+              onAction={() => router.push('/projects')}
+            />
+          ) : (
+            completedProjects.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => setSelectedProjectId(p.id)}
+                style={[styles.projectSelectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+              >
+                <View style={[styles.selectionThumbnail, { backgroundColor: theme.colors.surfaceAlt }]}>
+                  {p.thumbnail ? (
+                    <Image source={{ uri: p.thumbnail }} style={styles.thumbnail} />
+                  ) : (
+                    <FontAwesome name="image" size={24} color={theme.colors.muted} />
+                  )}
+                </View>
+                <View style={styles.selectionInfo}>
+                  <Text style={[styles.selectionTitle, { color: theme.colors.text }]}>{p.name}</Text>
+                  <Text style={{ color: theme.colors.textSecondary }}>{p.patternName || 'Custom Project'}</Text>
+                </View>
+                <FontAwesome name="chevron-right" size={16} color={theme.colors.muted} />
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       </Screen>
     );
@@ -112,22 +133,22 @@ export default function PublishProjectScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Preview Header */}
         <View style={styles.previewHeader}>
-           <View style={[styles.thumbnailContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
-             {project.thumbnail ? (
-               <Image source={{ uri: project.thumbnail }} style={styles.thumbnail} />
-             ) : (
-               <FontAwesome name="image" size={32} color={theme.colors.muted} />
-             )}
-           </View>
-           <View style={styles.previewMeta}>
-             <Text style={[styles.projectName, { color: theme.colors.text }]}>{project.name}</Text>
-             <Text style={{ color: theme.colors.textSecondary }}>
-               {project.patternName || 'Custom Pattern'}
-             </Text>
-             <Text style={{ color: theme.colors.accent, marginTop: 4 }}>
-                {project.photos.length} photos · {project.journal.length} journal entries
-             </Text>
-           </View>
+          <View style={[styles.thumbnailContainer, { backgroundColor: theme.colors.surfaceAlt }]}>
+            {project.thumbnail ? (
+              <Image source={{ uri: project.thumbnail }} style={styles.thumbnail} />
+            ) : (
+              <FontAwesome name="image" size={32} color={theme.colors.muted} />
+            )}
+          </View>
+          <View style={styles.previewMeta}>
+            <Text style={[styles.projectName, { color: theme.colors.text }]}>{project.name}</Text>
+            <Text style={{ color: theme.colors.textSecondary }}>
+              {project.patternName || 'Custom Pattern'}
+            </Text>
+            <Text style={{ color: theme.colors.accent, marginTop: 4 }}>
+              {project.photos.length} photos · {project.journal.length} journal entries
+            </Text>
+          </View>
         </View>
 
         {/* Caption Input */}
@@ -151,8 +172,8 @@ export default function PublishProjectScreen() {
         {/* Photos (Always Included) */}
         <View style={[styles.includeRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
           <View style={styles.includeInfo}>
-             <FontAwesome name="image" size={16} color={theme.colors.text} style={styles.includeIcon} />
-             <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Project Photos ({project.photos.length})</Text>
+            <FontAwesome name="image" size={16} color={theme.colors.text} style={styles.includeIcon} />
+            <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Project Photos ({project.photos.length})</Text>
           </View>
           <FontAwesome name="check-circle" size={20} color={theme.colors.accent} />
         </View>
@@ -160,74 +181,74 @@ export default function PublishProjectScreen() {
         {/* Notes (Always Included) */}
         <View style={[styles.includeRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
           <View style={styles.includeInfo}>
-             <FontAwesome name="sticky-note" size={16} color={theme.colors.text} style={styles.includeIcon} />
-             <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Project Notes</Text>
+            <FontAwesome name="sticky-note" size={16} color={theme.colors.text} style={styles.includeIcon} />
+            <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Project Notes</Text>
           </View>
           <FontAwesome name="check-circle" size={20} color={theme.colors.accent} />
         </View>
 
         {/* Toggles */}
         <View style={[styles.toggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-           <View style={styles.includeInfo}>
-             <FontAwesome name="book" size={16} color={theme.colors.text} style={styles.includeIcon} />
-             <View>
-               <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Journal Entries</Text>
-               <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Milestones & dates</Text>
-             </View>
-           </View>
-           <Switch
-             value={includeJournal}
-             onValueChange={setIncludeJournal}
-             trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
-           />
+          <View style={styles.includeInfo}>
+            <FontAwesome name="book" size={16} color={theme.colors.text} style={styles.includeIcon} />
+            <View>
+              <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Journal Entries</Text>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Milestones & dates</Text>
+            </View>
+          </View>
+          <Switch
+            value={includeJournal}
+            onValueChange={setIncludeJournal}
+            trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+          />
         </View>
 
         <View style={[styles.toggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-           <View style={styles.includeInfo}>
-             <FontAwesome name="paint-brush" size={16} color={theme.colors.text} style={styles.includeIcon} />
-             <View>
-               <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Studio Data</Text>
-               <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Moodboard & palette</Text>
-             </View>
-           </View>
-           <Switch
-             value={includeStudio}
-             onValueChange={setIncludeStudio}
-             trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
-           />
+          <View style={styles.includeInfo}>
+            <FontAwesome name="paint-brush" size={16} color={theme.colors.text} style={styles.includeIcon} />
+            <View>
+              <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Studio Data</Text>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Moodboard & palette</Text>
+            </View>
+          </View>
+          <Switch
+            value={includeStudio}
+            onValueChange={setIncludeStudio}
+            trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+          />
         </View>
 
-        {project.patternId && (
+        {project.patternName && (
           <View style={[styles.toggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-             <View style={styles.includeInfo}>
-               <FontAwesome name="link" size={16} color={theme.colors.text} style={styles.includeIcon} />
-               <View>
-                 <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Link Pattern Source</Text>
-                 <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Help others find the pattern you used</Text>
-               </View>
-             </View>
-             <Switch
-               value={includePattern}
-               onValueChange={setIncludePattern}
-               trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
-             />
+            <View style={styles.includeInfo}>
+              <FontAwesome name="link" size={16} color={theme.colors.text} style={styles.includeIcon} />
+              <View>
+                <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Link Pattern Source</Text>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Help others find the pattern you used</Text>
+              </View>
+            </View>
+            <Switch
+              value={includePattern}
+              onValueChange={setIncludePattern}
+              trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+            />
           </View>
         )}
 
         {/* Sell Pattern Option (Stub) */}
         <View style={[styles.toggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-           <View style={styles.includeInfo}>
-             <FontAwesome name="shopping-bag" size={16} color={theme.colors.text} style={styles.includeIcon} />
-             <View>
-               <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Sell Your Pattern?</Text>
-               <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>List your original design on the store</Text>
-             </View>
-           </View>
-           <Switch
-             value={sellPattern}
-             onValueChange={setSellPattern}
-             trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
-           />
+          <View style={styles.includeInfo}>
+            <FontAwesome name="shopping-bag" size={16} color={theme.colors.text} style={styles.includeIcon} />
+            <View>
+              <Text style={[styles.includeLabel, { color: theme.colors.text }]}>Sell Your Pattern?</Text>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>List your original design on the store</Text>
+            </View>
+          </View>
+          <Switch
+            value={sellPattern}
+            onValueChange={setSellPattern}
+            trackColor={{ false: theme.colors.surfaceAlt, true: theme.colors.accent }}
+          />
         </View>
 
         {sellPattern && (
@@ -362,7 +383,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 8,
-    opacity: 0.8, 
+    opacity: 0.8,
   },
   toggleRow: {
     flexDirection: 'row',

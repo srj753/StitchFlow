@@ -695,6 +695,57 @@ Pattern Detail (library context)
 - Sets converted to arrays for JSON serialization
 - Migration functions handle schema changes
 
+## 12. Community Features Architecture (December 2024)
+
+### New Stores
+
+#### useCommunityStore
+- **Posts**: Array of community posts with likes, bookmarks, comments
+- **Users**: Mock user data (id, username, avatar, bio)
+- **Pattern Store Items**: Buyable patterns with prices, ratings, difficulty
+- **Tester Calls**: Pattern testing opportunities with rewards
+- **Actions**: addPost, likePost, unlikePost, bookmarkPost, unbookmarkPost, addComment, deleteComment, applyToTesterCall
+
+#### useCartStore
+- **Items**: Cart items with id, name, price, image, designer, quantity
+- **Actions**: addItem, removeItem, updateQuantity, clearCart, getTotal, getItemCount
+- **Persistence**: AsyncStorage with `cart-storage` key
+
+### Community Screens
+
+```
+app/community/
+├── index.tsx          # Main community screen with 3 tabs (Feed, Patterns, Testers)
+├── publish.tsx        # Publish finished project to community
+├── [postId].tsx       # Post detail with comments system
+├── saved.tsx          # Saved/bookmarked posts
+├── cart.tsx           # Shopping cart for pattern purchases
+└── pattern/
+    └── [patternId].tsx  # Pattern detail with Buy Now / Add to Cart
+```
+
+### Community Data Flow
+
+```
+Project (finished) → Publish Screen → Community Store → Community Feed
+                                                      ↓
+                                              Post Detail → Comments
+                                                      ↓
+                                              Bookmark → Saved Posts
+
+Pattern Store Items → Pattern Detail → Add to Cart → Cart → Checkout
+                                   ↓
+Tester Calls → Pattern Detail → Apply to Test
+```
+
+### Key Components
+
+- **FeedTab**: Displays posts with like/bookmark/comment actions
+- **PatternStoreTab**: Grid of buyable patterns with prices and ratings
+- **TesterCallsTab**: Test opportunities with rewards and deadlines
+- **CartScreen**: View cart items, checkout, clear cart
+- **PatternDetailScreen**: Full pattern info with Buy Now / Add to Cart / Apply to Test
+
 ## Conclusion
 
 The current app has a solid foundation with:
@@ -703,18 +754,19 @@ The current app has a solid foundation with:
 - Theming system (light/dark/custom accent)
 - Advanced project tracking (counters, journal, photos, yarn linking)
 - Pattern library with interactive checklists
+- **Full community features with local state management**
+- **Pattern store with cart and checkout**
 - Comprehensive UX enhancements (loading states, toasts, haptics)
 
-**Recent Achievements:**
-- ✅ Linked counters for multi-part projects
-- ✅ Interactive pattern row checklists
-- ✅ Loading states and toast notifications
-- ✅ Full dark mode optimization
-- ✅ Web app compatibility improvements
+**Recent Achievements (December 2024):**
+- ✅ Community post creation and publishing
+- ✅ Post detail with full comment system
+- ✅ Like and bookmark functionality
+- ✅ Saved posts collection
+- ✅ Pattern store with buyable patterns
+- ✅ Cart system with checkout
+- ✅ Tester call applications
+- ✅ Pattern detail views for store and tester items
 
-**Next steps:** Continue polishing UX, add advanced pattern parsing (AI/OCR), implement voice commands, and connect community features to backend.
-
-
-
-
+**Next steps:** Connect to backend for real persistence, add user authentication, implement payment processing for pattern purchases.
 

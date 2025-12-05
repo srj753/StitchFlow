@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { ActiveProjectCard } from '@/components/home/ActiveProjectCard';
@@ -43,51 +43,65 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen scrollable={false}>
-      <ScrollView 
-        contentContainerStyle={styles.content} 
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: theme.colors.muted }]}>Good morning,</Text>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Ready to flow?</Text>
-          </View>
-          <TouchableOpacity 
-            onPress={handleProfilePress}
-            style={[styles.avatar, { borderColor: theme.colors.surface, backgroundColor: theme.colors.surfaceAlt }]}
-          >
-            <Text style={[styles.avatarText, { color: theme.colors.accent }]}>S</Text>
-          </TouchableOpacity>
+    <Screen scrollable={true} contentStyle={styles.content}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={[styles.greeting, { color: theme.colors.muted }]}>Good morning,</Text>
+          <Text style={[styles.title, { color: theme.colors.text }]}>Ready to flow?</Text>
         </View>
+        <Pressable
+          onPress={handleProfilePress}
+          role="button"
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.avatar,
+            {
+              borderColor: theme.colors.surface,
+              backgroundColor: theme.colors.surfaceAlt,
+              opacity: pressed ? 0.7 : 1,
+              cursor: 'pointer' as any,
+            }
+          ]}
+        >
+          <Text style={[styles.avatarText, { color: theme.colors.accent }]}>S</Text>
+        </Pressable>
+      </View>
 
-        {/* Active Project */}
-        {activeProject ? (
-          <ActiveProjectCard 
-            project={activeProject} 
-            onPress={() => handleOpenProject(activeProject)} 
-          />
-        ) : (
-          <TouchableOpacity
-            onPress={handleCreatePress}
-            activeOpacity={0.8}
-            style={[styles.emptyState, { backgroundColor: theme.colors.surfaceAlt }]}
+      {/* Active Project */}
+      {activeProject ? (
+        <ActiveProjectCard
+          project={activeProject}
+          onPress={() => handleOpenProject(activeProject)}
+        />
+      ) : (
+        <Link href="/projects/create" asChild>
+          <Pressable
+            role="button"
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.emptyState,
+              {
+                backgroundColor: theme.colors.surfaceAlt,
+                opacity: pressed ? 0.8 : 1,
+                cursor: 'pointer' as any,
+              }
+            ]}
           >
             <FontAwesome name="plus" size={24} color={theme.colors.muted} style={{ marginBottom: 8 }} />
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>Start a Project</Text>
             <Text style={[styles.emptySubtitle, { color: theme.colors.muted }]}>
               Tap to begin your first creation
             </Text>
-          </TouchableOpacity>
-        )}
+          </Pressable>
+        </Link>
+      )}
 
-        {/* Weekly Stats */}
-        <WeeklyProgress />
+      {/* Weekly Stats */}
+      <WeeklyProgress />
 
-        {/* Trending Patterns */}
-        <TrendingPatterns />
-      </ScrollView>
+      {/* Trending Patterns */}
+      <TrendingPatterns />
     </Screen>
   );
 }
